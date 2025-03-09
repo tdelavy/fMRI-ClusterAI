@@ -49,33 +49,8 @@ pip install -r requirements.txt
 
 ### 2. Set your OpenAI API Key
 
-Replace `your-user-specific-key-here` with your actual OpenAI API key. You MUST have a paid version to use it.
+Open the python file "AI.py" and replace `Add_Your_OpenAI_Key` with your actual OpenAI API key on line. You MUST have a paid version to use it.
 
-- **macOS/Linux:**
-
-Open your your shell configuration in your terminal and write:
-```bash
-nano ~/.zshrc
-```
-Add this line inside, save and quit:
-```bash
-export OPENAI_API_KEY="your-user-specific-key-here"
-```
-
-Write then this line to apply your changes:
-```bash
-source ~/.zshrc
-```
-
-- **Windows:**
-
-Open Command Prompt and run:
-
-```cmd
-setx OPENAI_API_KEY "your-user-specific-key-here"
-```
-
-*(Restart your terminal or computer to apply changes.)*
 
 ### 2. Install Dependencies
 
