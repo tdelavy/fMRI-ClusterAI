@@ -8,11 +8,11 @@ import docx
 from docx.shared import Pt
 
 # Instantiate the OpenAI client using your API key.
-openai_api_key = os.getenv("OPENAI_API_KEY")
-if not openai_api_key:
-    st.error("Please set your OPENAI_API_KEY environment variable!")
+if "OPENAI_API_KEY" not in st.secrets:
+    st.error("Please set your OPENAI_API_KEY secret in Streamlit!")
+    st.stop()
 else:
-    client = OpenAI(api_key=openai_api_key)
+    client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
 def get_anatomical_labels(coord, atlas):
     """
