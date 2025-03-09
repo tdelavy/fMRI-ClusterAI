@@ -34,10 +34,10 @@ whereami -help
 
 ## 🔧 Installation
 
-### 1. Clone this Repository
+### 1. Download the Repository or Clone it
 ```bash
-git clone https://github.com/your_username/your_repo.git
-cd your_repo
+git clone https://github.com/tdelavy/ClusterAI.git
+cd ClusterAI
 ```
 
 ### 2. Install Dependencies
@@ -49,15 +49,22 @@ pip install -r requirements.txt
 
 ### 2. Set your OpenAI API Key
 
-Replace `your-user-specific-key-here` with your actual OpenAI API key.
+Replace `your-user-specific-key-here` with your actual OpenAI API key. You MUST have a paid version to use it.
 
 - **macOS/Linux:**
 
-Edit your shell configuration file (e.g., `.bashrc` or `.zshrc`):
+Edit your shell configuration file:
 
+Open your terminal and write:
 ```bash
+nano ~/.zshrc
+```
+Add this line inside, save and quit:
 export OPENAI_API_KEY="your-user-specific-key-here"
-source ~/.zshrc  # or source ~/.bashrc
+
+Write then this line to apply your changes:
+```bash
+source ~/.zshrc
 ```
 
 - **Windows:**
@@ -82,6 +89,11 @@ pip install -r requirements.txt
 ## 🚀 Running the Streamlit App
 
 To start the app locally:
+Open your terminal and write:
+```bash
+cd path/to/ClusterAI
+```
+and run:
 ```bash
 streamlit run AI.py
 ```
@@ -98,10 +110,8 @@ http://localhost:8501
 ```
 .
 ├── AI.py                 # Streamlit App
-├── requirements.txt       # Python dependencies
-├── Julich_MNI2009c.nii.gz       # Required AFNI Atlas
-├── FS.afni.MNI2009c_asym.nii.gz # Required AFNI Atlas
-├── extract_spm_peaks.py         # Optional utility to convert SPM .m files
+├── requirements.txt       # Python dependencies     
+├── extract_spm_peaks.py         # Utility to convert SPM .m files
 ├── Julich_MNI2009c_Atlas.png
 └── FS.afni.MNI2009c_asym_Atlas.png
 ```
