@@ -7,11 +7,8 @@ import re
 import docx
 from docx.shared import Pt
 
-openai_api_key = os.getenv("OPENAI_API_KEY")
-if not openai_api_key:
-    st.error("Please set your OPENAI_API_KEY environment variable!")
-else:
-    client = OpenAI(api_key=openai_api_key)
+# Instantiate the OpenAI client using your API key.
+client = OpenAI(api_key="Add_Your_OpenAI_Key")
 
 def get_anatomical_labels(coord, atlas):
     """
