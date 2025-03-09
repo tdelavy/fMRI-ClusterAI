@@ -2,7 +2,7 @@
 
 This application leverages Streamlit, AFNI, and the OpenAI o1 model to facilitate anatomical labeling and interpretation of fMRI cluster data.
 
-![fMRI Cluster Analysis Screenshot](ClusterAnalysis.png)
+![fMRI Cluster Analysis](ClusterAnalysis.png)
 
 ---
 
