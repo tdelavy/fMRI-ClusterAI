@@ -36,8 +36,8 @@ whereami -help
 
 ### 1. Download the Repository or Clone it
 ```bash
-git clone https://github.com/tdelavy/ClusterAI.git
-cd ClusterAI
+git clone https://github.com/tdelavy/fMRI-ClusterAI.git
+cd fMRI-ClusterAI
 ```
 
 ### 2. Install Dependencies
@@ -67,7 +67,7 @@ pip install -r requirements.txt
 To start the app locally:
 Open your terminal and write:
 ```bash
-cd path/to/ClusterAI
+cd path/to/fMRI-ClusterAI
 ```
 and run:
 ```bash
