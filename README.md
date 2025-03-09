@@ -47,13 +47,13 @@ Create a Python environment (recommended) and install dependencies:
 pip install -r requirements.txt
 ```
 
-### 2. Set your OpenAI API Key
+### 3. Set your OpenAI API Key
 
 Open the python file "AI.py" and replace `Add_Your_OpenAI_Key` with your actual OpenAI API key on line 11. 
 You MUST have a paid version to use it.
 
 
-### 2. Install Dependencies
+### 4. Install Dependencies
 
 Ensure you have Python 3.10+ installed. Then install dependencies:
 ```bash
