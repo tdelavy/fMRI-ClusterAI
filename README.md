@@ -52,7 +52,7 @@ pip install -r requirements.txt
 Replace `your-user-specific-key-here` with your actual OpenAI API key. You MUST have a paid version to use it.
 
 - **macOS/Linux:**
-- 
+
 Open your your shell configuration in your terminal and write:
 ```bash
 nano ~/.zshrc
