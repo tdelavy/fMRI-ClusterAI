@@ -108,7 +108,6 @@ http://localhost:8501
 ## 📂 Folder Structure
 
 ```
-.
 ├── AI.py                 # Streamlit App
 ├── requirements.txt       # Python dependencies     
 ├── extract_spm_peaks.py         # Utility to convert SPM .m files
