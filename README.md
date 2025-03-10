@@ -58,8 +58,7 @@ pip install -r requirements.txt
 
 ### 3. Set your OpenAI API Key
 
-- Open the python file "AI.py" and replace `Add_Your_OpenAI_Key` with your actual OpenAI API key on line 13. 
-You MUST have a paid version to use it.
+- Open the python file "AI.py" and, on line 13, replace `Add_Your_OpenAI_Key` with your actual Perplexity API key you generated before. 
 
 
 ### 4. Install Dependencies
