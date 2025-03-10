@@ -2,7 +2,7 @@
 
 This application leverages Streamlit, AFNI, and Deep Research Sonar model from Perplexity to facilitate anatomical labeling and interpretation of fMRI cluster data.
 
-![fMRI Cluster Analysis](ClusterAnalysis.png)
+![fMRI Cluster Analysis](AIclusters.png)
 
 ---
 
