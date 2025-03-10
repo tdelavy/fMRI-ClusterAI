@@ -7,8 +7,14 @@ import re
 import docx
 from docx.shared import Pt
 
-# Instantiate the OpenAI client using your API key.
-client = OpenAI(api_key="Add_Your_OpenAI_Key")
+st.set_page_config(page_title="AItlas Clusters", page_icon="🧠")
+
+# Instantiate the client with the Perplexity API endpoint.
+openai_api_key = os.getenv("OPENAI_API_KEY")
+if not openai_api_key:
+    st.error("Please set your OPENAI_API_KEY environment variable!")
+else:
+    client = OpenAI(api_key=openai_api_key, base_url="https://api.perplexity.ai")
 
 def get_anatomical_labels(coord, atlas):
     """
@@ -68,35 +74,45 @@ def parse_cluster_file(file_path):
             if len(clusters) == 6:  # Only keep the first 6 clusters.
                 break
     return clusters
-
+    
 def synthesize_interpretation(anatomical_info, task_description, contrast_description):
     """
-    Sends a prompt to the OpenAI API that:
-     - Provides the full anatomical labels (for all clusters) extracted by the code.
-     - Instructs ChatGPT to provide a detailed interpretation only for the first six clusters.
-     - Includes the task and contrast description.
+    Sends a prompt to the Perplexity API, streams tokens, and progressively
+    updates Streamlit to show partial output as it arrives.
     """
     prompt = (
-        f"I conducted an fMRI study using the task: {task_description} and the contrast: {contrast_description}. "
-        "Below is the full anatomical labels output (obtained via AFNI whereami) for the most 6 relevant clusters from my analysis. "
-        "Add a small line to separat the each cluster"
-        "For each of the first six clusters, please provide the following:\n"
-        "1. The anatomical region's name and a detailed description of its known functions.\n"
-        "2. How this region is involved in the cognitive processes required for the task and in the specific contrast.\n"
-        "3. Up-to-date information from the literature (and, if possible, from the web) regarding its role in cognitive control and conflict resolution.\n\n"
-        "Here is the complete cluster information:\n\n"
+        "You are a knowledgeable yet objective research assistant specialized in neuroscience. "
+        "You will analyze the user-provided anatomical information for up to 6 clusters, as determined by AFNI whereami, in the context of an fMRI study. "
+        "Please follow these steps and rules:\n"
+        "1) Review each cluster (There are max 6).\n"
+        "2) Explain the cluster’s involvement in the fMRI task (if any relevant evidence or prior studies exist). If there is 0 known involvement, say so.\n"
+        "3) Summarize any up-to-date literature from reputable sources, if available, on that region’s role in the tasks or processes. If no relevant studies are found, say that evidence is currently limited or inconclusive.\n"
+        "\n"
+        f"Task: {task_description}\n"
+        f"Contrast: {contrast_description}\n"
+        "Below is the full anatomical labels output (via AFNI whereami) for up to 6 relevant clusters:\n"
         f"{anatomical_info}\n\n"
-        "Based on the above, please synthesize a detailed and accurate interpretation for only the first six clusters."
+        "Now synthesize a clear, accurate interpretation for each of the first six clusters (if the user provided that many)."
     )
     
+    # Make a SINGLE call with model="sonar-pro" or "sonar"
     response = client.chat.completions.create(
-        model="o1",
-        reasoning_effort="high",
+        model="sonar-deep-research", #-deep-research
         messages=[
             {"role": "user", "content": prompt}
-        ]
+        ],
     )
-    return response.choices[0].message.content
+
+        # Extract the raw text
+    interpretation = response.choices[0].message.content
+    
+    # Strip out any <think>...</think> segments, if present
+    interpretation = re.sub(r"<think>.*?</think>", "", interpretation, flags=re.DOTALL)
+
+    references = getattr(response, "citations", [])
+
+    # Then extract the text
+    return interpretation, references
 
 def filter_label_info(output):
     """
@@ -135,14 +151,18 @@ def run_analysis(cluster_file_path, atlas, task_description, contrast_descriptio
         anatomical_results.append(f"Cluster {i} (Voxels: {cluster['voxels']}, Peak: {cluster['Peak']}):\n{filtered_info}")
         
     anatomical_str = "\n\n".join(anatomical_results)
-    interpretation = synthesize_interpretation(anatomical_str, task_description, contrast_description)
-    return anatomical_str, interpretation
+
+    # ---- Show a spinner while the model is generating the interpretation ----
+    with st.spinner("Perplexity is thoroughly researching the internet to find the implications of these identified brain regions for the task and contrast. Please check back in a few minutes! :)"):
+        interpretation, references = synthesize_interpretation(anatomical_str, task_description, contrast_description)
+
+    return anatomical_str, interpretation, references
 
 def sanitize_filename(s):
     # Replace non-word characters with underscores
     return re.sub(r'\W+', '_', s)
 
-def create_word_report(settings_summary, anatomical_str, interpretation):
+def create_word_report(settings_summary, anatomical_str, interpretation, references):
     """
     Creates a Word document containing the settings summary,
     the parsed clusters, and the ChatGPT interpretation.
@@ -167,6 +187,15 @@ def create_word_report(settings_summary, anatomical_str, interpretation):
     doc.add_heading('ChatGPT Interpretation (First 6 Clusters)', level=1)
     doc.add_paragraph(interpretation, style='Normal')
 
+    # References section
+    if references:
+        doc.add_heading('References', level=1)
+        for i, ref in enumerate(references, start=1):
+            doc.add_paragraph(f"[{i}] {ref}", style='List Number')
+    else:
+        doc.add_heading('References', level=1)
+        doc.add_paragraph("No references returned.")
+
     # Save to a temporary file
     temp_doc = tempfile.NamedTemporaryFile(delete=False, suffix=".docx")
     doc.save(temp_doc.name)
@@ -175,14 +204,14 @@ def create_word_report(settings_summary, anatomical_str, interpretation):
 # -------------------------------
 # Streamlit App Layout
 # -------------------------------
-st.title("fMRI Cluster Analysis with o1-high model (OpenAI) Integration")
+st.title("fMRI Cluster Analysis with Atlas Labeling and Perplexity AI")
 
 st.markdown("""
 **Description:**  
 This app reads an AFNI cluster table file, using the default atlas **FS.afni.MNI2009c_asym**,
 to identify anatomical regions for the clusters (voxels). 
 
-The extracted anatomical information is then analyzed by o1 AI Model from OpenAi, which returns a detailed interpretation of the first six clusters.
+The extracted anatomical information is then analyzed by Perplexity’s Sonar Deep Research, which returns relevant literature on the first six clusters for the specified task and condition.
 """)
 
 # Sidebar inputs
@@ -618,7 +647,7 @@ u:ctx-rh-insula:115
         
 # --- Sidebar: Select file type ---
 conversion_choice = st.sidebar.selectbox(
-    label="Software used for cluster file",
+    label="Software used for clusterising",
     options=["AFNI", "SPM"],
     index=0,  # Default is AFNI
     help="Select 'AFNI' if you already have a .1D cluster file; select 'SPM' if you have an SPM .m file that needs conversion."
@@ -629,7 +658,7 @@ cluster_file_path = None  # This will store the path to the .1D file for analysi
 if conversion_choice == "SPM":
     # Uploader for SPM .m file only
     uploaded_m_file = st.sidebar.file_uploader(
-    "Choose your SPM .m file (must use RAI coordinates and MNI152_2009_template as the reference)",
+    "Choose your SPM .m file (MNI152_2009_template as the reference)",
     type=["m"]
     )
     if uploaded_m_file is not None:
@@ -672,7 +701,7 @@ if conversion_choice == "AFNI":
     if run_button:
         if cluster_file_path is not None:
             with st.spinner("Running analysis..."):
-                anatomical_str, interpretation = run_analysis(
+                anatomical_str, interpretation, references = run_analysis(
                     cluster_file_path=cluster_file_path,
                     atlas=atlas,
                     task_description=task_description,
@@ -681,9 +710,15 @@ if conversion_choice == "AFNI":
             # Store the results in session_state so they can be accessed later
             st.session_state.anatomical_str = anatomical_str
             st.session_state.interpretation = interpretation
+            st.session_state.references = references 
 
-            st.subheader("o1 Interpretation (First 6 Clusters)")
+            st.subheader("Deep Research Interpretation for the first 6 clusters:")
             st.markdown(interpretation)
+            if references:
+                st.subheader("References")
+                for i, ref in enumerate(references, start=1):
+                    # Format: "- [1](URL): URL"
+                    st.markdown(f"- {i}: {ref}")
             os.remove(cluster_file_path)
         else:
             st.warning("Please upload a cluster file (.1D) before running the analysis.")
@@ -708,7 +743,15 @@ report_filename = f"{sanitize_filename(task_description)}_{sanitize_filename(con
 # Only show the download button if the interpretation is available in session_state.
 if "interpretation" in st.session_state and st.session_state.interpretation:
     # Generate the Word report.
-    report_path = create_word_report(settings_summary, st.session_state.anatomical_str, st.session_state.interpretation)
+    my_references = st.session_state.get("references", [])
+
+    report_path = create_word_report(
+        settings_summary,
+        st.session_state.anatomical_str,
+        st.session_state.interpretation,
+        my_references
+    )
+
     with open(report_path, "rb") as f:
         report_bytes = f.read()
     st.download_button(
@@ -719,3 +762,28 @@ if "interpretation" in st.session_state and st.session_state.interpretation:
     )
     # Optionally, remove the temporary file after download.
     os.remove(report_path)
+    
+st.markdown(
+    """
+    <style>
+    .credits-discrete {
+        font-size: 0.85rem; /* Slightly smaller than normal text */
+        color: #888;        /* Gray text */
+        text-align: right;  /* Align to the right side of its container */
+        margin-right: 1rem; /* Optional spacing from the edge */
+    }
+    .highlight-name {
+        text-decoration: underline; /* Underline the name */
+    }
+    </style>
+    <div class="credits-discrete">
+      Credits to 
+      <a href="https://github.com/tdelavy/fMRI-ClusterAI" 
+         target="_blank"
+         style="color: inherit; text-decoration: none;">
+        <span class="highlight-name">Thibaud Delavy</span>
+      </a>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
