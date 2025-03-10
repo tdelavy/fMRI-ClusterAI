@@ -1,6 +1,6 @@
 # fMRI Cluster Analysis Web Application
 
-This application leverages Streamlit, AFNI, and the OpenAI o1 model to facilitate anatomical labeling and interpretation of fMRI cluster data.
+This application leverages Streamlit, AFNI, and Deep Research Sonar model from Perplexity to facilitate anatomical labeling and interpretation of fMRI cluster data.
 
 ![fMRI Cluster Analysis](ClusterAnalysis.png)
 
