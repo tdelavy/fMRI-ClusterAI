@@ -180,7 +180,7 @@ def create_word_report(settings_summary, anatomical_str, interpretation, referen
     doc.add_paragraph(anatomical_str, style='List Bullet')
 
     # ChatGPT Interpretation section
-    doc.add_heading('ChatGPT Interpretation (First 6 Clusters)', level=1)
+    doc.add_heading('Perplexity Interpretation (First 6 Clusters)', level=1)
     doc.add_paragraph(interpretation, style='Normal')
 
     # References section
