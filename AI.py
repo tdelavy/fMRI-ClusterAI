@@ -9,12 +9,8 @@ from docx.shared import Pt
 
 st.set_page_config(page_title="AItlas Clusters", page_icon="🧠")
 
-# Instantiate the client with the Perplexity API endpoint.
-openai_api_key = os.getenv("OPENAI_API_KEY")
-if not openai_api_key:
-    st.error("Please set your OPENAI_API_KEY environment variable!")
-else:
-    client = OpenAI(api_key=openai_api_key, base_url="https://api.perplexity.ai")
+# Add your Perplexity Key HERE!!!
+client = OpenAI(api_key="", base_url="https://api.perplexity.ai")
 
 def get_anatomical_labels(coord, atlas):
     """
