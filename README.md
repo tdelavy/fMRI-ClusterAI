@@ -37,7 +37,7 @@ whereami -help
 To use Perplexity’s Deep Research Sonar model for the automated cluster interpretation, you’ll need a Perplexity API key:
 1. Go to https://www.perplexity.ai/settings/api and log in or sign up.
 2. Generate your API key.
-3. Provide this key in the application code 
+3. Copy and securely store your API key; you’ll need it later to configure the application
 
 ---
 
