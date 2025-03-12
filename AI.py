@@ -12,6 +12,7 @@ st.set_page_config(page_title="AItlas Clusters", page_icon="🧠")
 # Add your Perplexity Key HERE!!!
 client = OpenAI(api_key="YOUR-PERPLEXITY-API-KEY-HERE", base_url="https://api.perplexity.ai")
 
+
 def get_anatomical_labels(coord, atlas):
     """
     Writes the coordinate to a temporary file and calls whereami
@@ -122,7 +123,7 @@ def filter_label_info(output):
             filtered_lines.append(line_stripped)
     return "\n".join(filtered_lines)
 
-def run_analysis(cluster_file_path, atlas, task_description, contrast_description):
+def run_analysis(cluster_file_path, atlas, task_description, contrast_description, use_ai):
     """
     Runs the full analysis:
       - Parses the cluster file (keeping only the first 6 clusters).
@@ -150,8 +151,11 @@ def run_analysis(cluster_file_path, atlas, task_description, contrast_descriptio
 
     # ---- Show a spinner while the model is generating the interpretation ----
     with st.spinner("Perplexity is thoroughly researching the internet to find the implications of these identified brain regions for the task and contrast. Please check back in a few minutes! :)"):
-        interpretation, references = synthesize_interpretation(anatomical_str, task_description, contrast_description)
-
+        if use_ai:
+            interpretation, references = synthesize_interpretation(anatomical_str, task_description, contrast_description)
+        else:
+            interpretation, references = "AI interpretation disabled", []
+        
     return anatomical_str, interpretation, references
 
 def sanitize_filename(s):
@@ -212,8 +216,13 @@ The extracted anatomical information is then analyzed by Perplexity’s Sonar De
 
 # Sidebar inputs
 st.sidebar.header("Analysis Settings")
-task_description = st.sidebar.text_input("Task Description", "Stroop task", help="Enter your fMRI task name")
-contrast_description = st.sidebar.text_input("Contrast Description", "", help="Enter your contrast (e.g., Incongruent minus Congruent)")
+use_ai = st.sidebar.checkbox(
+    "Use AI Interpretation",
+    value=True,
+    help="If unchecked, the app will not send a request to Perplexity and task/contrast fields will be disabled."
+)
+task_description = st.sidebar.text_input("Task Description", "Stroop task", disabled=not use_ai, help="Enter your fMRI task name")
+contrast_description = st.sidebar.text_input("Contrast Description", "", disabled=not use_ai, help="Enter your contrast (e.g., Incongruent minus Congruent)")
 atlas = st.sidebar.selectbox(
     label="Choose your atlas",
     options=["Julich_MNI2009c", "FS.afni.MNI2009c_asym"],
@@ -663,7 +672,7 @@ if conversion_choice == "SPM":
             tmp_m.write(uploaded_m_file.read())
             tmp_m_name = tmp_m.name
         # Construct a meaningful output filename using the task and contrast (assumed already defined)
-        output_filename = f"Clusters_{sanitize_filename(task_description)}_{sanitize_filename(contrast_description)}.1D"
+        output_filename = f"SPM_Clusters_{sanitize_filename(task_description)}_{sanitize_filename(contrast_description)}.1D"
         # Save in the current working directory
         output_filepath = os.path.join(os.getcwd(), output_filename)
         # Call the external conversion script (extract_spm_peaks.py)
@@ -701,7 +710,8 @@ if conversion_choice == "AFNI":
                     cluster_file_path=cluster_file_path,
                     atlas=atlas,
                     task_description=task_description,
-                    contrast_description=contrast_description
+                    contrast_description=contrast_description,
+                    use_ai=use_ai
                 )
             # Store the results in session_state so they can be accessed later
             st.session_state.anatomical_str = anatomical_str
