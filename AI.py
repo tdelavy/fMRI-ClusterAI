@@ -257,7 +257,7 @@ def run_analysis(cluster_file_path, atlas, task_description, contrast_descriptio
     # ---- Show a spinner while the model is generating the interpretation ----
     with st.spinner("Perplexity is thoroughly researching the internet to find the implications of these identified brain regions for the task and contrast. Please check back in a few minutes! :)"):
         if use_ai:
-            interpretation, references = synthesize_interpretation(anatomical_str, task_description, contrast_description)
+            interpretation, references = synthesize_interpretation(anatomical_str, task_description, contrast_description, max_clusters)
         else:
             interpretation, references = "AI interpretation disabled", []
         
