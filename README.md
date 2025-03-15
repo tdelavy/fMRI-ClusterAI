@@ -19,6 +19,13 @@ This application leverages Streamlit, AFNI, and Deep Research Sonar model from P
 
 ---
 
+##🌐 **Access the App**
+
+You can run the app directly in your browser at:
+aitlas.streamlit.app
+
+Alternatively, you can download or clone the repository to run it locally.
+
 ## 📌 **Prerequisites**
 
 ### AFNI Installation
@@ -41,7 +48,7 @@ To use Perplexity’s Deep Research Sonar model for the automated cluster interp
 
 ---
 
-## 🔧 Installation
+## 🔧 Installation (For Local Setup)
 
 ### 1. Download the Repository or Clone it
 ```bash
