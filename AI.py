@@ -422,25 +422,30 @@ else:
         step=1,
         help="Select how many clusters will be used in the analysis. Maximum 12 clusters."
     )
-    temp_use_ai = st.sidebar.checkbox(
-        "Use AI Interpretation",
-        value=False,
-        help="If unchecked, the app will not send a request to Perplexity and task/contrast fields will be disabled."
-    )
-
-    use_ai = False  # Default state
-
-    if temp_use_ai:
-        # When the user checks the box, prompt for a password.
-        entered_password = st.sidebar.text_input("Enter API password", type="password")
+    # Initialize the session state variable if it doesn't exist.
+    if "ai_enabled" not in st.session_state:
+        st.session_state.ai_enabled = False
+    
+    # If the password hasn't been verified yet, show a password input.
+    if not st.session_state.ai_enabled:
+        entered_password = st.sidebar.text_input(
+            "Enter password to enable AI Interpretation", type="password"
+        )
         if entered_password:
             if entered_password == st.secrets["api_password"]:
-                use_ai = True
-                st.sidebar.success("Password correct!")
+                st.session_state.ai_enabled = True
+                st.sidebar.success("Password correct! AI interpretation enabled.")
             else:
-                st.sidebar.error("Incorrect password. AI Interpretation disabled.")
-        else:
-            st.sidebar.info("Please enter the password to enable AI Interpretation.")
+                st.sidebar.error("Incorrect password. Please try again.")
+    
+    # Only display the checkbox if the password is correct.
+    if st.session_state.ai_enabled:
+        use_ai = st.sidebar.checkbox(
+            "Use AI Interpretation", value=True,
+            help="AI interpretation is enabled."
+        )
+    else:
+        use_ai = False
 
 # --- Run Analysis button (only for AFNI option) ---
 if conversion_choice == "AFNI":
