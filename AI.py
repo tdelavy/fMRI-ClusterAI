@@ -6,42 +6,148 @@ from openai import OpenAI
 import re
 import docx
 from docx.shared import Pt
+import nibabel as nib
+import numpy as np
 
 st.set_page_config(page_title="AItlas Clusters", page_icon="🧠")
 
-# Add your Perplexity Key HERE!!!
-client = OpenAI(api_key="YOUR-PERPLEXITY-API-KEY-HERE", base_url="https://api.perplexity.ai")
+# Instantiate the client with the Perplexity API endpoint.
+openai_api_key = os.getenv("OPENAI_API_KEY")
+if not openai_api_key:
+    st.error("Please set your OPENAI_API_KEY environment variable!")
+else:
+    client = OpenAI(api_key=openai_api_key, base_url="https://api.perplexity.ai")
 
-
-def get_anatomical_labels(coord, atlas):
+def load_label_file(file_path):
     """
-    Writes the coordinate to a temporary file and calls whereami
-    using the specified atlas.
+    Reads a label file (in the format produced by AFNI's 3dinfo -labeltable)
+    and returns a dictionary mapping integer labels to region names.
+    
+    Expected file format (each line):
+      "9" "right_Area_hOc4v_(LingG)"
+      "10" "right_Area_hOc3v_(LingG)"
+      ...
     """
-    coord_str = f"{coord[0]} {coord[1]} {coord[2]}"
-    
-    # Create a temporary file to hold the coordinate.
-    with tempfile.NamedTemporaryFile(mode='w+', delete=False) as tmp_file:
-        tmp_file.write(coord_str)
-        tmp_file_name = tmp_file.name
+    label_dict = {}
+    with open(file_path, "r") as f:
+        for line in f:
+            line = line.strip()
+            if not line.startswith('"'):
+                continue
+            matches = re.findall(r'"(.*?)"', line)
+            if len(matches) >= 2:
+                try:
+                    key = int(matches[0])
+                    label_dict[key] = matches[1]
+                except ValueError:
+                    continue
+    return label_dict
 
-    # Choose the flag based on the coordinate system selection.
-    flag = "-rai" if coord_system.upper() == "RAI" else "-lpi"
+# Load label dictionaries from your text files.
+label_julich = load_label_file("labelJulich.txt")
+label_fs_afni = load_label_file("labelFs.afni.txt")
+
+def search_all_labels(voxel, atlas_data, max_radius=7):
+    """
+    Searches around the given voxel (within a sphere of radius max_radius)
+    for all nonzero labels and returns a dictionary mapping label values
+    to their minimum Euclidean distance (in voxel units) from the original voxel.
+    """
+    shape = atlas_data.shape
+    label_distances = {}
+    for di in range(-max_radius, max_radius+1):
+        for dj in range(-max_radius, max_radius+1):
+            for dk in range(-max_radius, max_radius+1):
+                # Only consider offsets within a sphere of radius max_radius.
+                if di**2 + dj**2 + dk**2 <= max_radius**2:
+                    ni = voxel[0] + di
+                    nj = voxel[1] + dj
+                    nk = voxel[2] + dk
+                    if 0 <= ni < shape[0] and 0 <= nj < shape[1] and 0 <= nk < shape[2]:
+                        lab = int(atlas_data[ni, nj, nk])
+                        if lab != 0:
+                            dist = (di**2 + dj**2 + dk**2)**0.5
+                            if lab in label_distances:
+                                label_distances[lab] = min(label_distances[lab], dist)
+                            else:
+                                label_distances[lab] = dist
+    return label_distances
+
+def get_anatomical_labels(coord, atlas, coord_system="RAI"):
+    """
+    Maps a coordinate (x, y, z) to the correct voxel index using AFNI's 
+    geometry string: i = 96 - x,  j = 132 - y,  k = z + 78.
     
-    # Build the whereami command using -coord_file and explicitly set input as RAI/DICOM.
-    cmd = ["whereami", "-coord_file", tmp_file_name, "-atlas", atlas, flag]
-    #st.write("Running command:", " ".join(cmd))
+    Includes debug print statements to display intermediate values.
+    If the direct lookup returns 0, it searches within a 7 mm radius for nearby nonzero labels.
+    Then uses the label dictionary to return the region name(s) with distance information.
+    """
+    # 1) Choose which atlas to load
+    if atlas == "Julich_MNI2009c":
+        atlas_path = "Julich_MNI2009c.nii.gz"
+        label_dict = label_julich
+    elif atlas == "FS.afni.MNI2009c_asym":
+        atlas_path = "FS.afni.MNI2009c_asym.nii.gz"
+        label_dict = label_fs_afni
+    else:
+        return "Unknown atlas"
     
+    # 2) Load the atlas data (ignoring nibabel’s affine for coordinate transform)
     try:
-        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, 
-                                text=True, check=True)
-        output = result.stdout.strip()
-    except subprocess.CalledProcessError as e:
-        output = f"Error with coordinate {coord_str} using atlas {atlas}:\n{e.stderr.strip()}"
+        atlas_img = nib.load(atlas_path)
+    except Exception as e:
+        return f"Error loading atlas: {e}"
+    atlas_data = atlas_img.get_fdata()
+    shape = atlas_data.shape  # e.g. (193, 229, 193)
     
-    # Remove the temporary file.
-    os.remove(tmp_file_name)
-    return output
+    #st.write("Atlas shape:", shape)
+    
+    # 3) Convert the input coordinate from the user’s chosen system to RAS.
+    #    Here we assume your cluster file’s coordinates are already effectively in RAS.
+    if coord_system.upper() == "RAI":
+        conv_coord = (coord[0], coord[1], coord[2])
+    elif coord_system.upper().startswith("LPI"):
+        conv_coord = (-coord[0], -coord[1], coord[2])
+    else:
+        conv_coord = coord
+    
+    #st.write("Original coordinate:", coord)
+    #st.write("Converted coordinate (assumed RAS):", conv_coord)
+    
+    x_ras, y_ras, z_ras = conv_coord
+    
+    # 4) Apply AFNI's geometry string formula: i = 96 - x, j = 132 - y, k = z + 78.
+    i = 96 - x_ras
+    j = 132 - y_ras
+    k = z_ras + 78
+    
+    # 5) Round to nearest integer for voxel indices.
+    i, j, k = int(round(i)), int(round(j)), int(round(k))
+    
+    #st.write("Computed voxel indices: i=", i, " j=", j, " k=", k)
+    
+    # 6) Check if voxel is in bounds.
+    if i < 0 or i >= shape[0] or j < 0 or j >= shape[1] or k < 0 or k >= shape[2]:
+        return "Coordinate outside atlas volume"
+    
+    # 7) Direct lookup.
+    label_val = int(atlas_data[i, j, k])
+    #st.write("Direct lookup atlas label value at voxel:", label_val)
+    
+    if label_val != 0:
+        region_name = label_dict.get(label_val, f"Label {label_val} not found")
+        return region_name
+    else:
+        # 8) If direct lookup returns 0, search within a 7 mm radius for nearby nonzero labels.
+        #st.write("Direct lookup returned 0. Searching for nearby labels within 7 mm...")
+        label_candidates = search_all_labels((i, j, k), atlas_data, max_radius=7)
+        if label_candidates:
+            # Sort candidate labels by distance.
+            sorted_candidates = sorted(label_candidates.items(), key=lambda x: x[1])
+            search_info = "\n".join([f"* Within {round(dist,1)} mm: {label_dict.get(lab, 'Label '+str(lab))}" for lab, dist in sorted_candidates])
+            return search_info
+        else:
+            return "Label 0 not found"
 
 def parse_cluster_file(file_path, max_clusters=6):
     clusters = []
@@ -136,16 +242,15 @@ def run_analysis(cluster_file_path, atlas, task_description, contrast_descriptio
     anatomical_results = []
     
     # Display the first 6 clusters.
-    st.subheader(f"Parsed Clusters: first {max_clusters}:")
+    st.subheader(f"First {max_clusters} clusters:")
     
     # Get anatomical labels for each cluster.
     for i, cluster in enumerate(clusters, start=1):
-        label_info = get_anatomical_labels(cluster["Peak"], atlas)
-        filtered_info = filter_label_info(label_info)
+        label_info = get_anatomical_labels(cluster["Peak"], atlas, coord_system)
         st.write(f"**Cluster {i}:** Voxels: {cluster['voxels']}, Peak: {cluster['Peak']}")
-        st.text(filtered_info)
+        st.text(label_info)
         st.write("-" * 20)
-        anatomical_results.append(f"Cluster {i} (Voxels: {cluster['voxels']}, Peak: {cluster['Peak']}):\n{filtered_info}")
+        anatomical_results.append(f"Cluster {i} (Voxels: {cluster['voxels']}, Peak: {cluster['Peak']}):\n{label_info}")
         
     anatomical_str = "\n\n".join(anatomical_results)
 
@@ -180,7 +285,7 @@ def create_word_report(settings_summary, anatomical_str, interpretation, referen
     para.style.font.size = Pt(11)
 
     # Parsed Clusters section
-    doc.add_heading('Parsed Clusters (First 6)', level=1)
+    doc.add_heading('Parsed Clusters', level=1)
     doc.add_paragraph(anatomical_str, style='List Bullet')
 
     # ChatGPT Interpretation section
@@ -319,7 +424,7 @@ else:
     )
     use_ai = st.sidebar.checkbox(
         "Use AI Interpretation",
-        value=True,
+        value=False,
         help="If unchecked, the app will not send a request to Perplexity and task/contrast fields will be disabled."
     )
 
@@ -759,7 +864,7 @@ if conversion_choice == "AFNI":
             st.session_state.interpretation = interpretation
             st.session_state.references = references 
 
-            st.subheader("Deep Research Interpretation for the first 6 clusters:")
+            st.subheader(f"Deep Research Interpretation for the {max_clusters} clusters:")
             st.markdown(interpretation)
             if references:
                 st.subheader("References")
@@ -789,11 +894,6 @@ if conversion_choice == "AFNI":
             st.session_state.interpretation,
             my_references
         )
-
-        st.subheader("Parsed Clusters:")
-        st.write(st.session_state.anatomical_str)
-        st.subheader("Deep Research Interpretation for the first 6 clusters:")
-        st.markdown(st.session_state.interpretation)
 
         with open(report_path, "rb") as f:
             report_bytes = f.read()
