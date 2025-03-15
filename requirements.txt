@@ -1,3 +1,5 @@
 streamlit
 openai>=1.14.3
 python-docx
+nibabel
+numpy
