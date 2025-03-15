@@ -22,7 +22,7 @@ This application leverages Streamlit, AFNI, and Deep Research Sonar model from P
 ## 🌐 **Access the App**
 
 You can run the app directly in your browser at:
-- aitlas.streamlit.app
+- [**Aitlas**](https://aitlas.streamlit.app/)
 
 Alternatively, you can download or clone the repository to run it locally.
 
