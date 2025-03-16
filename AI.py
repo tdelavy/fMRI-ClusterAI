@@ -438,31 +438,20 @@ if "pro_mode" not in st.session_state:
 # Create the Pro Mode indicator HTML
 if st.session_state.pro_mode:
     pro_status_html = (
-        "<div style='display:inline-block; border-radius:50%; width:12px; height:12px; "
-        "background-color: green; margin-right: 5px;'></div>"
+        "<a href='?page=select' title='Pro Mode is enabled.'>"
+        "<div style='display:inline-block; border-radius:50%; width:13px; height:13px; background-color: green; margin-right: 5px;'></div>"
+        "</a>"
     )
 else:
     pro_status_html = (
-        "<div style='display:inline-block; border-radius:50%; width:12px; height:12px; "
-        "background-color: red; margin-right: 5px;'></div>"
+        "<a href='?page=select' title='Pro Mode is disabled.'>"
+        "<div style='display:inline-block; border-radius:50%; width:13px; height:13px; background-color: red; margin-right: 5px;'></div>"
+        "</a>"
     )
 
 # Combine the header text with the indicator HTML
 header_html = f"<h2>Analysis Settings {pro_status_html}</h2>"
 st.sidebar.markdown(header_html, unsafe_allow_html=True)
-
-# Apply CSS to style the locked SPM option in gray
-st.markdown(
-    """
-    <style>
-    /* This CSS targets the option with the locked text in the selectbox */
-    option[value="SPM (Pro Mode required)"] {
-        color: gray;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
 
 # Define the options
 if st.session_state.pro_mode:
@@ -486,26 +475,36 @@ if not st.session_state.pro_mode and conversion_choice.startswith("SPM"):
 
 # Check if a valid option has been selected
 if conversion_choice == "-- Select an option --":
-    pro_password = st.sidebar.text_input("Enter Pro Mode Password", type="password")
-    if pro_password:
-        if pro_password == st.secrets["api_password"]:
-            st.session_state.pro_mode = True
-            st.sidebar.success("Pro Mode enabled!")
-        else:
-            st.sidebar.error("Incorrect Pro Mode password.")
+    if not st.session_state.pro_mode:
+        pro_password = st.sidebar.text_input("Enter Pro Mode Password", type="password")
+        if pro_password:
+            if pro_password == st.secrets["api_password"]:
+                st.session_state.pro_mode = True
+                st.rerun()  # Immediately update the UI
+            else:
+                st.sidebar.error("Incorrect Pro Mode password.")
+    if st.session_state.pro_mode:
+        st.sidebar.success("Pro Mode enabled!")
+                
     st.title("AItlas")
     st.subheader("Analyze your fMRI clusters with anatomical labeling and Deep Research AI from Perplexity")
     st.markdown(""" 
     #### AItlas: fMRI Cluster Analysis for AFNI & SPM
 
-    AItlas is designed to analyze fMRI clusters from **AFNI** and **SPM**. It reads a `.1D` file containing the voxel numbers along with the X, Y, and Z coordinates of the peak of each cluster (in **RAI** and **LPI** coordinate systems) and suggests two atlases based on precision levels for identifying brain regions.
+    AItlas is designed to analyze fMRI clusters from **AFNI** and **SPM**. It reads a `.1D` file containing the voxel numbers along with the X, Y, and Z coordinates of the peak of each cluster and suggests two atlases based on precision levels for identifying brain regions.
 
     The extracted anatomical information is then analyzed by Perplexity’s Sonar Deep Research, which returns relevant literature on the number of clusters selected for the specified task and condition.
+    """)
 
-    #### 📌 **Coordinate Systems Used**
+    st.markdown(""" 
+    <u>**Note:**</u> To use the AItlas Pro Mode, request the password
+    [**here**](mailto:thibaud.delavy@bluewin.ch?subject=Request%20for%20AI%20Pro%20Mode&body=Hello%20Thibaud,%0A%0AI%20would%20like%20to%20request%20access%20to%20the%20AI%20Pro%20Mode.%0A%0ABest,%0A%5BYour%20Name%5D).
+    """, unsafe_allow_html=True)
+
+    st.markdown(""" 
+    ##### 📌 **Coordinate Systems Used**
     - **RAI (used by AFNI)**: Right-To-Left, Anterior-To-Posterior, Inferior-To-Superior.
     - **LPI (used by SPM)**: Left-To-Right, Posterior-To-Anterior, Inferior-To-Superior.
-
     """)
 
     st.markdown("""
@@ -627,7 +626,7 @@ else:
     if st.session_state.pro_mode:
         use_ai = st.sidebar.checkbox(
             "Use Sonar Deep Research", 
-            value=True,
+            value=False,
             help="Pro mode allows deep literature research via Perplexity."
         )
     else:
@@ -647,10 +646,7 @@ if conversion_choice == "AFNI":
 
     The extracted anatomical information is then analyzed by Perplexity’s Sonar Deep Research, which returns relevant literature on the number of clusters selected for the specified task and condition.
     """)
-    st.markdown(""" 
-    <u>**Note:**</u> To use the AI Pro Mode, request the password
-    [**here**](mailto:thibaud.delavy@bluewin.ch?subject=Request%20for%20AI%20Pro%20Mode&body=Hello%20Thibaud,%0A%0AI%20would%20like%20to%20request%20access%20to%20the%20AI%20Pro%20Mode.%0A%0ABest,%0A%5BYour%20Name%5D).
-    """, unsafe_allow_html=True)
+
 
     if atlas == "Julich_MNI2009c":
         st.image("Julich_MNI2009c_Atlas.png", caption="Julich MNI2009c Atlas")
@@ -1172,4 +1168,6 @@ else:
             - You can then download the .1D file for further analysis in AFNI.
             - Select now the AFNI option and proceed with the analysis with your downloaded .1D file.
             """)
+
+
 
