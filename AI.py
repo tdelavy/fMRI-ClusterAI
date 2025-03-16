@@ -974,6 +974,7 @@ else:
     # When SPM is selected, only the conversion is performed
     if "converted_file_content" in st.session_state:
         st.title("AItlas")
+        st.subheader("SPM Cluster Conversion")
         st.markdown("### Main Clusters Detected and Converted into a .1D File:")
         st.code(st.session_state.converted_file_content, language="text")
 
@@ -986,6 +987,7 @@ else:
         )
     else:
         st.title("AItlas")
+        st.subheader("SPM Cluster Conversion")
         st.warning("Please upload a SPM .m file to convert to .1D file in order to be analyzed.")
         with st.expander("#### How to Use AItlas with SPM"):
             st.text("""\
