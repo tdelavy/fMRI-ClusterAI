@@ -431,21 +431,68 @@ def create_word_report(settings_summary, anatomical_str, interpretation, referen
 # -------------------------------
 #st.title("fMRI Cluster Analysis with Atlas Labeling and Perplexity AI")
 
-# Sidebar inputs
-st.sidebar.header("Analysis Settings")
+# Initialize Pro Mode flag if not already set
+if "pro_mode" not in st.session_state:
+    st.session_state.pro_mode = False
 
-cluster_file_path = None  # This will store the path to the .1D file for analysis
+# Create the Pro Mode indicator HTML
+if st.session_state.pro_mode:
+    pro_status_html = (
+        "<div style='display:inline-block; border-radius:50%; width:12px; height:12px; "
+        "background-color: green; margin-right: 5px;'></div>"
+    )
+else:
+    pro_status_html = (
+        "<div style='display:inline-block; border-radius:50%; width:12px; height:12px; "
+        "background-color: red; margin-right: 5px;'></div>"
+    )
 
-# Sidebar: Choose software first
+# Combine the header text with the indicator HTML
+header_html = f"<h2>Analysis Settings {pro_status_html}</h2>"
+st.sidebar.markdown(header_html, unsafe_allow_html=True)
+
+# Apply CSS to style the locked SPM option in gray
+st.markdown(
+    """
+    <style>
+    /* This CSS targets the option with the locked text in the selectbox */
+    option[value="SPM (Pro Mode required)"] {
+        color: gray;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+# Define the options
+if st.session_state.pro_mode:
+    options = ["-- Select an option --", "AFNI", "SPM"]
+else:
+    options = ["-- Select an option --", "AFNI", "SPM (Pro Mode required)"]
+
+# Create the selectbox
 conversion_choice = st.sidebar.selectbox(
     label="Software used for clusterising",
-    options=["-- Select an option --", "AFNI", "SPM"],
+    options=options,
     index=0,
     help="Select 'AFNI' if you already have a .1D cluster file; select 'SPM' if you have an SPM .m file that needs conversion."
 )
 
+# If non-Pro and SPM is selected, reset and show warning.
+if not st.session_state.pro_mode and conversion_choice.startswith("SPM"):
+    st.sidebar.warning("SPM is locked. Enable Pro Mode to use this option.")
+    # Reset the selection to default:
+    conversion_choice = "-- Select an option --"
+
 # Check if a valid option has been selected
 if conversion_choice == "-- Select an option --":
+    pro_password = st.sidebar.text_input("Enter Pro Mode Password", type="password")
+    if pro_password:
+        if pro_password == st.secrets["api_password"]:
+            st.session_state.pro_mode = True
+            st.sidebar.success("Pro Mode enabled!")
+        else:
+            st.sidebar.error("Incorrect Pro Mode password.")
     st.title("AItlas")
     st.subheader("Analyze your fMRI clusters with anatomical labeling and Deep Research AI from Perplexity")
     st.markdown(""" 
@@ -492,6 +539,8 @@ if conversion_choice == "-- Select an option --":
         unsafe_allow_html=True
     )
     st.stop()
+
+cluster_file_path = None  # This will store the path to the .1D file for analysis
 
 if conversion_choice == "SPM":
     task_description = st.sidebar.text_input(
@@ -575,30 +624,19 @@ else:
         step=1,
         help="Select how many clusters will be used in the analysis. Maximum 12 clusters."
     )
-    # Initialize the session state variable if it doesn't exist.
-    if "ai_enabled" not in st.session_state:
-        st.session_state.ai_enabled = False
-    
-    # If the password hasn't been verified yet, show a password input.
-    if not st.session_state.ai_enabled:
-        entered_password = st.sidebar.text_input(
-            "Enter password to enable AI Interpretation", type="password"
-        )
-        if entered_password:
-            if entered_password == st.secrets["api_password"]:
-                st.session_state.ai_enabled = True
-                st.sidebar.success("Password correct! AI interpretation enabled.")
-            else:
-                st.sidebar.error("Incorrect password. Please try again.")
-    
-    # Only display the checkbox if the password is correct.
-    if st.session_state.ai_enabled:
+    if st.session_state.pro_mode:
         use_ai = st.sidebar.checkbox(
-            "Use AI Interpretation", value=True,
-            help="AI interpretation is enabled."
+            "Use Sonar Deep Research", 
+            value=True,
+            help="Pro mode allows deep literature research via Perplexity."
         )
     else:
-        use_ai = False
+        use_ai = st.sidebar.checkbox(
+            "Use Sonar Deep Research", 
+            value=False, 
+            disabled=True,
+            help="This feature is available only in Pro Mode. Enable Pro Mode to use it."
+        )
 
 # --- Run Analysis button (only for AFNI option) ---
 if conversion_choice == "AFNI":
@@ -1066,10 +1104,9 @@ if conversion_choice == "AFNI":
         f"Coordinate System: {coord_system}"
     )
 
-    report_filename = f"{sanitize_filename(task_description)}_{sanitize_filename(contrast_description)}_{sanitize_filename(atlas)}_Report.docx"
-
     # Only show the download button if the interpretation is available in session_state.
-    if "interpretation" in st.session_state and st.session_state.interpretation:
+    if st.session_state.pro_mode and "interpretation" in st.session_state and st.session_state.interpretation:
+        report_filename = f"{sanitize_filename(task_description)}_{sanitize_filename(contrast_description)}_{sanitize_filename(atlas)}_Report.docx"
         # Generate the Word report.
         my_references = st.session_state.get("references", [])
         my_cluster_images = st.session_state.get("cluster_images", {})
@@ -1092,6 +1129,8 @@ if conversion_choice == "AFNI":
         )
         # Optionally, remove the temporary file after download.
         os.remove(report_path)
+    elif "interpretation" in st.session_state and st.session_state.interpretation:
+        st.warning("Downloading the Word report is available only in Pro Mode. Please enable Pro Mode to access this feature.")
 else:
     # When SPM is selected, only the conversion is performed
     if "converted_file_content" in st.session_state:
