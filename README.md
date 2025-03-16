@@ -19,14 +19,14 @@ This application leverages Streamlit, AFNI, and Deep Research Sonar model from P
 
 ---
 
-## 🌐 **Access the App**
+## 🌐 **Access the App Without Installing Anything**
 
 You can run the app directly in your browser at:
 - [**Aitlas**](https://aitlas.streamlit.app/)
 
-Alternatively, you can download or clone the repository to run it locally.
+Note: To use Perplexity Pro (Sonar Deep-Research Mode), you will need to enter a password. Request access by contacting thibaud.delavy@bluewin.ch.
 
-## 📌 **Prerequisites if you want to download the app locally**
+## 📌 **Prerequisites if you Download the App Locally**
 
 ### AFNI Installation
 
