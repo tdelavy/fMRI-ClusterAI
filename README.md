@@ -26,7 +26,7 @@ You can run the app directly in your browser at:
 
 Alternatively, you can download or clone the repository to run it locally.
 
-## 📌 **Prerequisites**
+## 📌 **Prerequisites if you want to download the app locally**
 
 ### AFNI Installation
 
