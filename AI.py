@@ -615,14 +615,22 @@ else:
         index=1,
         help="Select which atlas to use for anatomical labeling"
     )
-    max_clusters = st.sidebar.number_input(
-        "Max. number of clusters to include",
-        min_value=1,
-        max_value=12,
-        value=6,
-        step=1,
-        help="Select how many clusters will be used in the analysis. Maximum 12 clusters."
-    )
+    if st.session_state.pro_mode:
+        max_clusters = st.sidebar.number_input(
+            "Max. number of clusters to include",
+            min_value=1,
+            max_value=12,
+            value=6,
+            step=1,
+            help="Select how many clusters will be used in the analysis. Maximum 12 clusters."
+        )
+    else:
+        max_clusters = st.sidebar.number_input(
+            "Max. number of clusters to include",
+            value=4,
+            disabled=True,
+            help="Only 4 clusters are available in the non pro version."
+        )
     if st.session_state.pro_mode:
         use_ai = st.sidebar.checkbox(
             "Use Sonar Deep Research", 
