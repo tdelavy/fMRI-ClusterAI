@@ -642,7 +642,7 @@ else:
             "Use Sonar Deep Research", 
             value=False, 
             disabled=True,
-            help="This feature is available only in Pro Mode. Enable Pro Mode to use it."
+            help="This feature is available only in Pro Mode."
         )
 
 # --- Run Analysis button (only for AFNI option) ---
