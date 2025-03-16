@@ -347,6 +347,30 @@ if conversion_choice == "-- Select an option --":
     For optimal performance, this application assumes that your fMRI data has been normalized using the **MNI152 2009 template**. The voxel-to-anatomical label mapping is calibrated specifically for this template. If a different template was used during preprocessing, the anatomical labeling may not be accurate. Please ensure that your analysis employed the MNI152 2009 template to benefit from this app.
     """, unsafe_allow_html=True)
     st.warning("Please select either AFNI or SPM to continue.")
+    st.markdown(
+        """
+        <style>
+        .credits-discrete {
+            font-size: 0.85rem; /* Slightly smaller than normal text */
+            color: #888;        /* Gray text */
+            text-align: right;  /* Align to the right side of its container */
+            margin-right: 1rem; /* Optional spacing from the edge */
+        }
+        .highlight-name {
+            text-decoration: underline; /* Underline the name */
+        }
+        </style>
+        <div class="credits-discrete">
+        Credits to 
+        <a href="https://github.com/tdelavy/fMRI-ClusterAI" 
+            target="_blank"
+            style="color: inherit; text-decoration: none;">
+            <span class="highlight-name">Thibaud Delavy</span>
+        </a>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
     st.stop()
 
 if conversion_choice == "SPM":
@@ -985,30 +1009,4 @@ else:
             - You can then download the .1D file for further analysis in AFNI.
             - Select now the AFNI option and proceed with the analysis with your downloaded .1D file.
             """)
-
-
-st.markdown(
-    """
-    <style>
-    .credits-discrete {
-        font-size: 0.85rem; /* Slightly smaller than normal text */
-        color: #888;        /* Gray text */
-        text-align: right;  /* Align to the right side of its container */
-        margin-right: 1rem; /* Optional spacing from the edge */
-    }
-    .highlight-name {
-        text-decoration: underline; /* Underline the name */
-    }
-    </style>
-    <div class="credits-discrete">
-      Credits to 
-      <a href="https://github.com/tdelavy/fMRI-ClusterAI" 
-         target="_blank"
-         style="color: inherit; text-decoration: none;">
-        <span class="highlight-name">Thibaud Delavy</span>
-      </a>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
 
