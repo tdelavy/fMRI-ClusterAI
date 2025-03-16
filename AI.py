@@ -309,15 +309,7 @@ def create_word_report(settings_summary, anatomical_str, interpretation, referen
 # -------------------------------
 # Streamlit App Layout
 # -------------------------------
-st.title("fMRI Cluster Analysis with Atlas Labeling and Perplexity AI")
-
-st.markdown("""
-**Description:**  
-This app reads an AFNI cluster table file, using the default atlas **FS.afni.MNI2009c_asym**,
-to identify anatomical regions for the clusters (voxels). 
-
-The extracted anatomical information is then analyzed by Perplexity’s Sonar Deep Research, which returns relevant literature on the first six clusters for the specified task and condition.
-""")
+#st.title("fMRI Cluster Analysis with Atlas Labeling and Perplexity AI")
 
 # Sidebar inputs
 st.sidebar.header("Analysis Settings")
@@ -334,8 +326,27 @@ conversion_choice = st.sidebar.selectbox(
 
 # Check if a valid option has been selected
 if conversion_choice == "-- Select an option --":
-    st.warning("AItlas works by reading a .1D file that contains the voxel numbers along with the X, Y, and Z coordinates of the peak of each cluster. It uses these values to identify the anatomical regions for each cluster by referencing the selected atlas, ultimately generating a detailed analysis report.")
-    st.write("Please select either AFNI or SPM to continue.")
+    st.title("AItlas")
+    st.subheader("Analyze your fMRI clusters with anatomical labeling and Deep Research AI from Perplexity")
+    st.markdown(""" 
+    #### AItlas: fMRI Cluster Analysis for AFNI & SPM
+
+    AItlas is designed to analyze fMRI clusters from **AFNI** and **SPM**. It reads a `.1D` file containing the voxel numbers along with the X, Y, and Z coordinates of the peak of each cluster (in **RAI** and **LPI** coordinate systems) and suggests two atlases based on precision levels for identifying brain regions.
+
+    The extracted anatomical information is then analyzed by Perplexity’s Sonar Deep Research, which returns relevant literature on the number of clusters selected for the specified task and condition.
+
+    #### 📌 **Coordinate Systems Used**
+    - **RAI (used by AFNI)**: Right-To-Left, Anterior-To-Posterior, Inferior-To-Superior.
+    - **LPI (used by SPM)**: Left-To-Right, Posterior-To-Anterior, Inferior-To-Superior.
+
+    """)
+
+    st.markdown("""
+    <u>**Important Template Information:**</u>
+
+    For optimal performance, this application assumes that your fMRI data has been normalized using the **MNI152 2009 template**. The voxel-to-anatomical label mapping is calibrated specifically for this template. If a different template was used during preprocessing, the anatomical labeling may not be accurate. Please ensure that your analysis employed the MNI152 2009 template to benefit from this app.
+    """, unsafe_allow_html=True)
+    st.warning("Please select either AFNI or SPM to continue.")
     st.stop()
 
 if conversion_choice == "SPM":
@@ -351,8 +362,6 @@ if conversion_choice == "SPM":
         disabled=False,
         help="Enter your contrast (e.g., Incongruent minus Congruent)"
     )
-
-if conversion_choice == "SPM":
     # Uploader for SPM .m file only
     uploaded_m_file = st.sidebar.file_uploader(
         "Choose your SPM .m file (MNI152_2009_template as the reference) for conversion",
@@ -447,8 +456,21 @@ else:
     else:
         use_ai = False
 
+
 # --- Run Analysis button (only for AFNI option) ---
 if conversion_choice == "AFNI":
+    st.title("AItlas")
+    st.subheader("Analyze your fMRI clusters with anatomical labeling and Deep Research AI from Perplexity")
+    st.markdown(""" 
+    AItlas is designed to analyze fMRI clusters. Download your `.1D` file containing the voxel numbers along with the X, Y, and Z coordinates of the peak of each cluster (in **RAI** or **LPI** coordinate systems) and choose one of the two atlases.
+
+    The extracted anatomical information is then analyzed by Perplexity’s Sonar Deep Research, which returns relevant literature on the number of clusters selected for the specified task and condition.
+    """)
+    st.markdown(""" 
+    <u>**Note:**</u> To use the AI Pro Mode, request the password
+    [**here**](mailto:thibaud.delavy@bluewin.ch?subject=Request%20for%20AI%20Pro%20Mode&body=Hello%20Thibaud,%0A%0AI%20would%20like%20to%20request%20access%20to%20the%20AI%20Pro%20Mode.%0A%0ABest,%0A%5BYour%20Name%5D).
+    """, unsafe_allow_html=True)
+
     if atlas == "Julich_MNI2009c":
         st.image("Julich_MNI2009c_Atlas.png", caption="Julich MNI2009c Atlas")
         with st.expander("View Julich Atlas Region List"):
@@ -927,6 +949,7 @@ if conversion_choice == "AFNI":
 else:
     # When SPM is selected, only the conversion is performed
     if "converted_file_content" in st.session_state:
+        st.title("AItlas")
         st.markdown("### Main Clusters Detected and Converted into a .1D File:")
         st.code(st.session_state.converted_file_content, language="text")
 
@@ -938,7 +961,30 @@ else:
             mime="text/plain"
         )
     else:
+        st.title("AItlas")
         st.warning("Please upload a SPM .m file to convert to .1D file in order to be analyzed.")
+        with st.expander("#### How to Use AItlas with SPM"):
+            st.text("""\
+        To use this app correctly with SPM, follow these steps:
+        
+        1. Generate a .m file from SPM:
+        - Open SPM in MATLAB.
+        - Navigate to your results window.
+        - Click on File → **Generate Code**.
+        - Save the generated .m file on your computer.
+        """)
+            st.image("MatClusterExtraction.png", caption="Matlab Cluster Extraction")
+            st.markdown("""
+            2. Upload your .m file:
+            - Click the Upload button below.
+            - Select the .m file you saved.
+            - The app will automatically extract cluster information and convert the file into .1D format.
+            
+            3. Download your .1D file and proceed with the analysis:
+            - Once converted, the app will display the detected clusters.
+            - You can then download the .1D file for further analysis in AFNI.
+            - Select now the AFNI option and proceed with the analysis with your downloaded .1D file.
+            """)
 
 
 st.markdown(
@@ -965,3 +1011,4 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
