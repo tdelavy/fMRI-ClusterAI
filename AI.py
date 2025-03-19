@@ -282,13 +282,13 @@ def synthesize_interpretation(anatomical_info, task_description, contrast_descri
         "Please follow these steps and rules:\n"
         "1) Review each cluster.\n"
         "2) Explain the cluster’s involvement in the fMRI task (if any relevant evidence or prior studies exist). If there is 0 known involvement, say so.\n"
-        "3) Summarize any up-to-date literature from reputable sources, if available, on that region’s role in the tasks or processes. Make sure you give enough relevant information to understand the role of the cluster in known litterature. But, if no relevant studies are found, say that evidence is currently limited or inconclusive.\n"
+        "3) Summarize any up-to-date literature from reputable sources, if available, regarding that region’s role in processes related to the theme. Make sure you give enough relevant information to understand the role of the clusters in known litterature. But, if no relevant studies are found, mention that evidence is currently limited or inconclusive regarding the cluster detected and the domain and task objective.\n"
         "\n"
-        f"Task: {task_description}\n"
-        f"Contrast: {contrast_description}\n"
+        f"Theme / Domain of the fmri analysis: {task_description}\n"
+        f"Analysis Objective (contrasts): {contrast_description}\n"
         "Below is the full anatomical labels output (via AFNI whereami) for the relevant clusters:\n"
         f"{anatomical_info}\n\n"
-        "Now synthesize a clear, accurate interpretation for each clusters."
+        "Now synthesize a clear, accurate interpretation for each cluster."
     )
     
     # Make a SINGLE call with model="sonar-pro" or "sonar"
@@ -587,14 +587,14 @@ if conversion_choice == "SPM":
 
 else:
     task_description = st.sidebar.text_input(
-        "Task Description",
-        "Stroop task",
-        help="Enter your fMRI task name"
+        "Theme / Domain",
+        "Cognitive fatigue",
+        help="Enter the theme or domain of your study (e.g., cognitive fatigue) to give context to Perplexity"
     )
     contrast_description = st.sidebar.text_input(
-        "Contrast Description",
+        "Analysis description ((e.g., contrast)",
         "",
-        help="Enter your contrast (e.g., Incongruent minus Congruent)"
+        help="Enter the overall objective of your analysis (e.g., Incongruent minus Congruent in stroop task)"
     )
     # AFNI is selected: uploader for .1D file only
     uploaded_file = st.sidebar.file_uploader("Choose your cluster file (.1D)", type=["1D"])
