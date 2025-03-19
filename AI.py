@@ -278,7 +278,7 @@ def synthesize_interpretation(anatomical_info, task_description, contrast_descri
     """
     prompt = (
         "You are a knowledgeable yet objective research assistant specialized in neuroscience. "
-        f"You will analyze the user-provided anatomical information for up to {max_clusters} clusters, as determined by AFNI whereami, in the context of an fMRI study.\n"
+        f"You will analyze the user-provided anatomical information for up to {max_clusters} clusters in the context of an fMRI study.\n"
         "Please follow these steps and rules:\n"
         "1) Review each cluster.\n"
         "2) Explain the cluster’s involvement in the fMRI task (if any relevant evidence or prior studies exist). If there is 0 known involvement, say so.\n"
