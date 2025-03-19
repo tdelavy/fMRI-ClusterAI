@@ -591,7 +591,7 @@ else:
         "Cognitive fatigue",
         help="Enter the theme or domain of your study (e.g., cognitive fatigue) to give context to Perplexity"
     )
-    contrast_description = st.sidebar.text_input(
+    contrast_description = st.sidebar.text_area(
         "Analysis description (e.g., contrast)",
         "",
         help="Enter the overall objective of your analysis (e.g., Incongruent minus Congruent in stroop task)"
