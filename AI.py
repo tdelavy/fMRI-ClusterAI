@@ -431,6 +431,19 @@ def create_word_report(settings_summary, anatomical_str, interpretation, referen
 # -------------------------------
 #st.title("fMRI Cluster Analysis with Atlas Labeling and Perplexity AI")
 
+st.markdown(
+    """
+    <style>
+    /* Remove extra top padding in the sidebar */
+    [data-testid="stSidebar"] > div:first-child {
+        padding-top: 0rem;
+        margin-top: 0rem;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 # Initialize Pro Mode flag if not already set
 if "pro_mode" not in st.session_state:
     st.session_state.pro_mode = False
