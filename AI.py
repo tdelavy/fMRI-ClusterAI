@@ -594,20 +594,8 @@ else:
     contrast_description = st.sidebar.text_area(
         "Analysis description (e.g., contrast)",
         "",
-        help="Enter the overall objective of your analysis (e.g., Incongruent minus Congruent in stroop task)"
-    )
-
-    st.markdown(
-        """
-        <style>
-        /* Target the dropzone within the file uploader */
-        div[data-testid="stFileUploadDropzone"] {
-            height: 100px; /* Adjust to your desired height */
-            padding: 10px; /* Adjust the padding as needed */
-        }
-        </style>
-        """,
-        unsafe_allow_html=True
+        help="Enter the overall objective of your analysis (e.g., Incongruent minus Congruent in stroop task)",
+        height=50
     )
     
     # AFNI is selected: uploader for .1D file only
