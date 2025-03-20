@@ -594,8 +594,7 @@ else:
     contrast_description = st.sidebar.text_area(
         "Analysis description (e.g., contrast)",
         "",
-        help="Enter the overall objective of your analysis (e.g., Incongruent minus Congruent in stroop task)",
-        height=50
+        help="Enter the overall objective of your analysis (e.g., Incongruent minus Congruent in stroop task)"
     )
     
     # AFNI is selected: uploader for .1D file only
