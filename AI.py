@@ -596,6 +596,20 @@ else:
         "",
         help="Enter the overall objective of your analysis (e.g., Incongruent minus Congruent in stroop task)"
     )
+
+    st.markdown(
+        """
+        <style>
+        /* Target the dropzone within the file uploader */
+        div[data-testid="stFileUploadDropzone"] {
+            height: 100px; /* Adjust to your desired height */
+            padding: 10px; /* Adjust the padding as needed */
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+    
     # AFNI is selected: uploader for .1D file only
     uploaded_file = st.sidebar.file_uploader("Choose your cluster file (.1D)", type=["1D"])
     if uploaded_file is not None:
