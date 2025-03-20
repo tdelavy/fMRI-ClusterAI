@@ -450,7 +450,7 @@ else:
     )
 
 # Combine the header text with the indicator HTML
-header_html = f"<h2>Analysis Settings {pro_status_html}</h2>"
+header_html = f"<h1>Analysis Settings {pro_status_html}</h1>"
 st.sidebar.markdown(header_html, unsafe_allow_html=True)
 
 # Define the options
