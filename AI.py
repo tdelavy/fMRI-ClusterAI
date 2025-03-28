@@ -624,10 +624,13 @@ else:
             help="Select which atlas to use for anatomical labeling"
         )
     else:
-        atlas = "Julich_MNI2009c"  # Only allow this atlas in non-pro mode
-        st.sidebar.write("Additional atlas options are available in Pro mode:")
-        st.sidebar.write("• FS.afni.MNI2009c_asym (locked)")
-        st.sidebar.write("• Broadmann_pijn (locked)")
+        atlas = st.sidebar.selectbox(
+            label="Choose your atlas",
+            options=["Julich_MNI2009c", "FS.afni.MNI2009c_asym", "Broadmann_pijn"],
+            index=0,  # default "Julich_MNI2009c"
+            disabled=True,
+            help="Additional atlas options are available in Pro mode: FS.afni.MNI2009c_asym & Broadmann_pijn"
+        )
     if st.session_state.pro_mode:
         max_clusters = st.sidebar.number_input(
             "Max. number of clusters to include",
