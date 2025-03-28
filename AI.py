@@ -620,7 +620,7 @@ else:
         atlas = st.sidebar.selectbox(
             label="Choose your atlas",
             options=["Julich_MNI2009c", "FS.afni.MNI2009c_asym", "Broadmann_pijn"],
-            index=0,  # default "Julich_MNI2009c"
+            index=1,  # default "Julich_MNI2009c"
             help="Select which atlas to use for anatomical labeling"
         )
     else:
@@ -995,6 +995,7 @@ if conversion_choice == "AFNI":
     u:left_Frontal-to-Temporal-II_(GapMap):357
     ----------- End regions for Julich_MNI2009c atlas --------------
     """)
+            
     elif atlas == "Julich_MNI2009c":
         st.image("FS.afni.MNI2009c_asym_Atlas.png", caption="FS.afni.MNI2009c_asym Atlas")
         with st.expander("View FS.afni.MNI2009c_asym Region List"):
@@ -1177,6 +1178,7 @@ if conversion_choice == "AFNI":
     u:ctx-rh-BA47:139
     ----------- End regions for Brodmann_pijn atlas-----------
     """)
+            
     run_button = st.sidebar.button("Run Analysis")
     if run_button:
         if cluster_file_path is not None:
