@@ -666,7 +666,7 @@ if conversion_choice == "AFNI":
     st.title("AItlas")
     st.subheader("Analyze your fMRI clusters with anatomical labeling and Deep Research AI from Perplexity")
     st.markdown(""" 
-    AItlas is designed to analyze fMRI clusters. Download your `.1D` file containing the voxel numbers along with the X, Y, and Z coordinates of the peak of each cluster (in **RAI** or **LPI** coordinate systems) and choose one of the two atlases.
+    AItlas is designed to analyze fMRI clusters. Download your `.1D` file containing the voxel numbers along with the X, Y, and Z coordinates of the peak of each cluster (in **RAI** or **LPI** coordinate systems) and choose one of the three atlases.
 
     The extracted anatomical information is then analyzed by Perplexity’s Sonar Deep Research, which returns relevant literature on the number of clusters selected for the specified task and condition.
     """)
