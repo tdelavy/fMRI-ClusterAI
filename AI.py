@@ -996,7 +996,7 @@ if conversion_choice == "AFNI":
     ----------- End regions for Julich_MNI2009c atlas --------------
     """)
             
-    elif atlas == "Julich_MNI2009c":
+    elif atlas == "FS.afni.MNI2009c_asym":
         st.image("FS.afni.MNI2009c_asym_Atlas.png", caption="FS.afni.MNI2009c_asym Atlas")
         with st.expander("View FS.afni.MNI2009c_asym Region List"):
             st.text("""\
