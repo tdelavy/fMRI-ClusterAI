@@ -618,7 +618,7 @@ else:
     )
     atlas = st.sidebar.selectbox(
         label="Choose your atlas",
-        options=["Broadmann_pijn", "FS.afni.MNI2009c_asym", "Julich_MNI2009c"],
+        options=["Julich_MNI2009c", "FS.afni.MNI2009c_asym", "Broadmann_pijn" ],
         index=1,
         help="Select which atlas to use for anatomical labeling"
     )
