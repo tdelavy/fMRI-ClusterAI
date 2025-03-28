@@ -141,6 +141,7 @@ def load_label_file(file_path):
 # Load label dictionaries from your text files.
 label_julich = load_label_file("labelJulich.txt")
 label_fs_afni = load_label_file("labelFs.afni.txt")
+label_Brodmann = load_label_file("labelBrodmann.txt")
 
 def search_all_labels(voxel, atlas_data, max_radius=7):
     """
@@ -184,6 +185,9 @@ def get_anatomical_labels(coord, atlas, coord_system="RAI"):
     elif atlas == "FS.afni.MNI2009c_asym":
         atlas_path = "FS.afni.MNI2009c_asym.nii.gz"
         label_dict = label_fs_afni
+    elif atlas == "Broadmann_pijn":
+        atlas_path = "Brodmann_pijn_afni.nii.gz"
+        label_dict = label_Brodmann
     else:
         return "Unknown atlas"
     
@@ -330,6 +334,8 @@ def run_analysis(cluster_file_path, atlas, task_description, contrast_descriptio
         atlas_path = "Julich_MNI2009c.nii.gz"
     elif atlas == "FS.afni.MNI2009c_asym":
         atlas_path = "FS.afni.MNI2009c_asym.nii.gz"
+    elif atlas == "Broadmann_pijn":
+        atlas_path = "Brodmann_pijn_afni.nii.gz"
 
     atlas_img = nib.load(atlas_path)  # the same atlas you used in get_anatomical_labels
     atlas_data = atlas_img.get_fdata()
@@ -612,7 +618,7 @@ else:
     )
     atlas = st.sidebar.selectbox(
         label="Choose your atlas",
-        options=["Julich_MNI2009c", "FS.afni.MNI2009c_asym"],
+        options=["Broadmann_pijn", "FS.afni.MNI2009c_asym", "Julich_MNI2009c"],
         index=1,
         help="Select which atlas to use for anatomical labeling"
     )
@@ -980,7 +986,7 @@ if conversion_choice == "AFNI":
     u:left_Frontal-to-Temporal-II_(GapMap):357
     ----------- End regions for Julich_MNI2009c atlas --------------
     """)
-    else:
+    elif atlas == "Julich_MNI2009c":
         st.image("FS.afni.MNI2009c_asym_Atlas.png", caption="FS.afni.MNI2009c_asym Atlas")
         with st.expander("View FS.afni.MNI2009c_asym Region List"):
             st.text("""\
@@ -1074,6 +1080,93 @@ if conversion_choice == "AFNI":
     u:ctx-rh-transversetemporal:114
     u:ctx-rh-insula:115
     ----------- End regions for FS.afni.MNI2009c_asym atlas --------------
+    """)
+    
+    elif atlas == "Broadmann_pijn":
+        st.image("Brodmann_pijn_Atlas.png", caption="Broadmann_pijn Atlas")
+        with st.expander("View Broadmann_pijn Region List"):
+            st.text("""\
+    Atlas Brodmann_pijn,      78 regions
+    ----------- Begin regions for Brodmann_pijn atlas-----------
+    u:ctx-lh-BA1_3:1
+    u:ctx-lh-BA2:2
+    u:ctx-lh-BA4:3
+    u:ctx-lh-BA5:4
+    u:ctx-lh-BA6:5
+    u:ctx-lh-BA7:6
+    u:ctx-lh-BA8:7
+    u:ctx-lh-BA9:8
+    u:ctx-lh-BA10:9
+    u:ctx-lh-BA11:10
+    u:ctx-lh-BA13:11
+    u:ctx-lh-BA16:12
+    u:ctx-lh-BA17:13
+    u:ctx-lh-BA18:14
+    u:ctx-lh-BA19:15
+    u:ctx-lh-BA20:16
+    u:ctx-lh-BA21:17
+    u:ctx-lh-BA22:18
+    u:ctx-lh-BA23:19
+    u:ctx-lh-BA24:20
+    u:ctx-lh-BA25:21
+    u:ctx-lh-BA26_29_30:22
+    u:ctx-lh-BA27:23
+    u:ctx-lh-BA28:24
+    u:ctx-lh-BA31:25
+    u:ctx-lh-BA32:26
+    u:ctx-lh-BA33:27
+    u:ctx-lh-BA34:28
+    u:ctx-lh-BA35_36:29
+    u:ctx-lh-BA37:30
+    u:ctx-lh-BA38:31
+    u:ctx-lh-BA39:32
+    u:ctx-lh-BA40:33
+    u:ctx-lh-BA41_42_52:34
+    u:ctx-lh-BA43:35
+    u:ctx-lh-BA44:36
+    u:ctx-lh-BA45:37
+    u:ctx-lh-BA46:38
+    u:ctx-lh-BA47:39
+    u:ctx-rh-BA1_3:101
+    u:ctx-rh-BA2:102
+    u:ctx-rh-BA4:103
+    u:ctx-rh-BA5:104
+    u:ctx-rh-BA6:105
+    u:ctx-rh-BA7:106
+    u:ctx-rh-BA8:107
+    u:ctx-rh-BA9:108
+    u:ctx-rh-BA10:109
+    u:ctx-rh-BA11:110
+    u:ctx-rh-BA13:111
+    u:ctx-rh-BA16:112
+    u:ctx-rh-BA17:113
+    u:ctx-rh-BA18:114
+    u:ctx-rh-BA19:115
+    u:ctx-rh-BA20:116
+    u:ctx-rh-BA21:117
+    u:ctx-rh-BA22:118
+    u:ctx-rh-BA23:119
+    u:ctx-rh-BA24:120
+    u:ctx-rh-BA25:121
+    u:ctx-rh-BA26_29_30:122
+    u:ctx-rh-BA27:123
+    u:ctx-rh-BA28:124
+    u:ctx-rh-BA31:125
+    u:ctx-rh-BA32:126
+    u:ctx-rh-BA33:127
+    u:ctx-rh-BA34:128
+    u:ctx-rh-BA35_36:129
+    u:ctx-rh-BA37:130
+    u:ctx-rh-BA38:131
+    u:ctx-rh-BA39:132
+    u:ctx-rh-BA40:133
+    u:ctx-rh-BA41_42_52:134
+    u:ctx-rh-BA43:135
+    u:ctx-rh-BA44:136
+    u:ctx-rh-BA45:137
+    u:ctx-rh-BA46:138
+    u:ctx-rh-BA47:139
+    ----------- End regions for Brodmann_pijn atlas-----------
     """)
     run_button = st.sidebar.button("Run Analysis")
     if run_button:
