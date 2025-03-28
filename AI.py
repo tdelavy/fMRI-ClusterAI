@@ -627,7 +627,7 @@ else:
         atlas = st.sidebar.selectbox(
             label="Choose your atlas",
             options=["Julich_MNI2009c", "FS.afni.MNI2009c_asym", "Broadmann_pijn"],
-            index=0,  # default "Julich_MNI2009c"
+            index=1,
             disabled=True,
             help="Additional atlas options are available in Pro mode: FS.afni.MNI2009c_asym & Broadmann_pijn"
         )
