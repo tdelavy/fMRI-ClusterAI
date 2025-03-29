@@ -381,7 +381,7 @@ if conversion_choice == "-- Select an option --":
         with st.container():
             st.markdown(f"""
                 <div style="background-color:#d1ecf1;padding:10px;border-radius:5px;border-left:5px solid #0c5460;">
-                    {welcome_paragraph}
+                {welcome_paragraph}
                 </div>
                 """, unsafe_allow_html=True)
         st.session_state.welcome_shown = True
