@@ -1202,7 +1202,7 @@ if conversion_choice == "AFNI":
             st.warning("Please upload a cluster file (.1D) before running the analysis.")
     settings_summary = (
         f"Task Description: {task_description}\n"
-        f"Contrast Description: {contrast_description}\n"
+        f"Analysis Description: {contrast_description}\n"
         f"Atlas: {atlas}\n"
         f"Coordinate System: {coord_system}"
     )
