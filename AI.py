@@ -272,18 +272,18 @@ def synthesize_interpretation(anatomical_info, task_description, contrast_descri
     updates Streamlit to show partial output as it arrives.
     """
     prompt = (
-        "You are a knowledgeable yet objective research assistant specialized in neuroscience. "
-        f"You will analyze the user-provided anatomical information for up to {max_clusters} clusters in the context of an fMRI study.\n"
-        "Please follow these steps and rules:\n"
-        "1) Review each cluster.\n"
+        "You are a specialized neuroscience literature analysis assistant."
+        f"Based on the following anatomical information for up to {max_clusters} clusters from a fMRI study.\n"
+        "Please provide a detailed literature analysis as follows:\n\n"
+        "1) Review each cluster information.\n"
         "2) Explain the cluster’s involvement in the fMRI task (if any relevant evidence or prior studies exist). If there is 0 known involvement, say so.\n"
-        "3) Summarize any up-to-date literature from reputable sources, if available, regarding that region’s role in processes related to the theme. Make sure you give enough relevant information to understand the role of the clusters in known litterature. But, if no relevant studies are found, mention that evidence is currently limited or inconclusive regarding the cluster detected and the domain and task objective.\n"
+        "3) Provide a detailed summary of up-to-date literature from reputable sources, if available, on that region’s role in the tasks or processes. Make sure you give enough relevant information to understand the role of the cluster in known litterature. But, if no relevant studies are found, say that evidence is currently limited or inconclusive.\n"
         "\n"
-        f"Theme / Domain of the fmri analysis: {task_description}\n"
-        f"Analysis Objective (contrasts): {contrast_description}\n"
-        "Below is the full anatomical labels output (via AFNI whereami) for the relevant clusters:\n"
+        f"Theme/domain of the research: {task_description}\n"
+        f"Explanation of the clusters found: {contrast_description}\n"
+        "Below is the full anatomical labels output for the relevant clusters:\n"
         f"{anatomical_info}\n\n"
-        "Now synthesize a clear, accurate interpretation for each cluster."
+        "Now synthesize a clear, accurate interpretation for each clusters."
     )
     
     # Make a SINGLE call with model="sonar-pro" or "sonar"
