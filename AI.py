@@ -359,6 +359,8 @@ def run_analysis(cluster_file_path, atlas, task_description, contrast_descriptio
         if use_ai:
             st.subheader(f"Deep Research Interpretation for the {max_clusters} clusters:")
             interpretation, references = synthesize_interpretation(anatomical_str, task_description, contrast_description, max_clusters)
+        else:
+            interpretation, references = "AI interpretation disabled", []
         
     return anatomical_str, interpretation, references, cluster_images
 
