@@ -88,7 +88,7 @@ def get_anatomical_labels(coord, atlas, coord_system="RAI"):
     if atlas == "Julich_MNI2009c":
         atlas_path = "Julich_MNI2009c.nii.gz"
         label_dict = label_julich
-    elif atlas == "FS.afni.MNI2009c_asym":
+    elif atlas == "FreeSurfer_MNI2009c":
         atlas_path = "FS.afni.MNI2009c_asym.nii.gz"
         label_dict = label_fs_afni
     elif atlas == "Broadmann_pijn":
@@ -231,7 +231,7 @@ def run_analysis(cluster_file_path, atlas, task_description, contrast_descriptio
 
     if atlas == "Julich_MNI2009c":
         atlas_path = "Julich_MNI2009c.nii.gz"
-    elif atlas == "FS.afni.MNI2009c_asym":
+    elif atlas == "FreeSurfer_MNI2009c":
         atlas_path = "FS.afni.MNI2009c_asym.nii.gz"
     elif atlas == "Broadmann_MNI2009":
         atlas_path = "Brodmann_pijn_afni.nii.gz"
@@ -497,17 +497,17 @@ else:
     if st.session_state.pro_mode:
         atlas = st.sidebar.selectbox(
             label="Choose your atlas",
-            options=["Julich_MNI2009c", "FS.afni.MNI2009c_asym", "Broadmann_MNI2009"],
+            options=["Julich_MNI2009c", "FreeSurfer_MNI2009c", "Broadmann_MNI2009"],
             index=1,  # default "Julich_MNI2009c"
             help="Select which atlas to use for anatomical labeling"
         )
     else:
         atlas = st.sidebar.selectbox(
             label="Choose your atlas",
-            options=["Julich_MNI2009c", "FS.afni.MNI2009c_asym", "Broadmann_MNI2009"],
+            options=["Julich_MNI2009c", "FreeSurfer_MNI2009c", "Broadmann_MNI2009"],
             index=1,
             disabled=True,
-            help="Additional atlas options are available in Pro mode: FS.afni.MNI2009c_asym & Broadmann_pijn"
+            help="Additional atlas options are available in Pro mode: FreeSurfer_MNI2009c & Broadmann_pijn"
         )
     if st.session_state.pro_mode:
         max_clusters = st.sidebar.number_input(
@@ -874,9 +874,9 @@ if conversion_choice == "AFNI":
     ----------- End regions for Julich_MNI2009c atlas --------------
     """)
             
-    elif atlas == "FS.afni.MNI2009c_asym":
-        st.image("FS.afni.MNI2009c_asym_Atlas.png", caption="FS.afni.MNI2009c_asym Atlas")
-        with st.expander("View FS.afni.MNI2009c_asym Region List"):
+    elif atlas == "FreeSurfer_MNI2009c":
+        st.image("FS.afni.MNI2009c_asym_Atlas.png", caption="FreeSurfer_MNI2009c Atlas")
+        with st.expander("View FreeSurfer_MNI2009c Region List"):
             st.text("""\
     Atlas FS.afni.MNI2009c_asym,      87 regions
     ----------- Begin regions for FS.afni.MNI2009c_asym atlas-----------
