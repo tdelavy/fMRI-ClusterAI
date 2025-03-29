@@ -93,14 +93,14 @@ def create_dual_slices(atlas_data, i, j, k, x_mm, y_mm, z_mm, pad=10):
     # Left: Axial
     # We do transpose so that horizontally => y, vertically => x
     axs[0].imshow(axial_cropped.T, origin='lower', cmap=my_cmap, norm=my_norm)
-    axs[0].plot(dot_y_ax, dot_x_ax, 'ro', markersize=5)  # note the swap
+    axs[0].plot(dot_y_ax, dot_x_ax, 'ro', markersize=13)  # note the swap
     axs[0].set_title(f"Axial (Z = {z_mm:.1f} mm)")
     axs[0].axis('off')
 
     # Right: Sagittal
     # This has shape [y_range, z_range], so .T => horizontal => z, vertical => y
     axs[1].imshow(sag_cropped.T, origin='lower', cmap=my_cmap, norm=my_norm)
-    axs[1].plot(dot_x_sag, dot_y_sag, 'ro', markersize=5)
+    axs[1].plot(dot_x_sag, dot_y_sag, 'ro', markersize=13)
     axs[1].set_title(f"Sagittal (X = {x_mm:.1f} mm)")
     axs[1].axis('off')
 
@@ -341,7 +341,7 @@ def run_analysis(cluster_file_path, atlas, task_description, contrast_descriptio
         
         x_mm, y_mm, z_mm = cluster["Peak"]
         # 1) Create the dual-slice figure for Word doc
-        dual_buf = create_dual_slices(atlas_data, vi, vj, vk, x_mm, y_mm, z_mm, pad=50)
+        dual_buf = create_dual_slices(atlas_data, vi, vj, vk, x_mm, y_mm, z_mm, pad=100)
 
         with st.expander(f"Show slices for Cluster {i}"):
             st.image(dual_buf, caption=f"Axial & Sagittal")
