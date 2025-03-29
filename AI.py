@@ -379,7 +379,7 @@ if conversion_choice == "-- Select an option --":
 
     if "welcome_shown" not in st.session_state:
         with st.container():
-            st.markdown("""
+            st.markdown(f"""
                 <div style="background-color:#d1ecf1;padding:10px;border-radius:5px;border-left:5px solid #0c5460;">
                     {welcome_paragraph}
                 </div>
