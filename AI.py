@@ -343,8 +343,8 @@ def run_analysis(cluster_file_path, atlas, task_description, contrast_descriptio
         # 1) Create the dual-slice figure for Word doc
         dual_buf = create_dual_slices(atlas_data, vi, vj, vk, x_mm, y_mm, z_mm, pad=100)
 
-        with st.expander(f"Show slices for Cluster {i}"):
-            st.image(dual_buf, caption=f"Axial & Sagittal")
+        #with st.expander(f"Show slices for Cluster {i}"):
+            #st.image(dual_buf, caption=f"Axial & Sagittal")
 
         # 3) Store the figure bytes for this cluster
         cluster_images[i] = dual_buf.getvalue()
@@ -1212,7 +1212,7 @@ if conversion_choice == "AFNI":
         report_filename = f"{sanitize_filename(task_description)}_{sanitize_filename(contrast_description)}_{sanitize_filename(atlas)}_Report.docx"
         # Generate the Word report.
         my_references = st.session_state.get("references", [])
-        my_cluster_images = st.session_state.get("cluster_images", {})
+        my_cluster_images = None #st.session_state.get("cluster_images", {})
 
         report_path = create_word_report(
             settings_summary,
