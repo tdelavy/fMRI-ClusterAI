@@ -333,7 +333,7 @@ def run_analysis(cluster_file_path, atlas, task_description, contrast_descriptio
 
     # Get anatomical labels for each cluster.
     for i, cluster in enumerate(clusters, start=1):
-        label_info, (vi, vj, vk) = get_anatomical_labels(cluster["Peak"], atlas, coord_system)
+        label_info, (vi, vj, vk), neurosynth_url = get_anatomical_labels(cluster["Peak"], atlas, coord_system)
         st.write(f"**Cluster {i}:** Voxels: {cluster['voxels']}, Peak: {cluster['Peak']}")
         st.text(label_info)
 
