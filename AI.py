@@ -18,7 +18,7 @@ st.set_page_config(page_title="AItlas Clusters", page_icon="🧠")
 welcome_paragraph = """
 <h4 style="color:#0c5460;margin-bottom:5px;">🎉 Welcome back!</h4>
 <p style="color:#0c5460;margin:0;">
-    We've added <b>new Neurosynth visualizations</b> for each cluster, allowing you to explore the functional connectivity of your specific clusters at rest. We've also integrated the Brodmann atlas :')
+    We've added <b>new Neurosynth visualizations</b> for each cluster, allowing you to explore the functional connectivity of your specific clusters at rest. Brodmann atlas is now integrated!
 </p>
 """
 
