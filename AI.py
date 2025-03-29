@@ -337,7 +337,12 @@ def run_analysis(cluster_file_path, atlas, task_description, contrast_descriptio
         st.write(f"**Cluster {i}:** Voxels: {cluster['voxels']}, Peak: {cluster['Peak']}")
         st.text(label_info)
 
-        st.markdown(f"[Functional Resting State Connectivity]({neurosynth_url})", unsafe_allow_html=True)
+        with st.expander("🧠 Functional Resting-State Connectivity (via Neurosynth.org)"):
+            components.html(f"""
+                <div style="transform: scale(0.55); transform-origin: top left; width: 1000px; height: 750px;">
+                    <iframe src="{neurosynth_url}" width="1600" height="950" style="border:none;"></iframe>
+                </div>
+            """, height=550)
         
         x_mm, y_mm, z_mm = cluster["Peak"]
         # 1) Create the dual-slice figure for Word doc
