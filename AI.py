@@ -22,98 +22,6 @@ if not openai_api_key:
 else:
     client = OpenAI(api_key=openai_api_key, base_url="https://api.perplexity.ai")
 
-def make_discrete_colormap(n_labels):
-    """
-    Creates a discrete colormap & normalization for integer labels [0..n_labels-1].
-    Label 0 will be assigned black, while the others get colors from 'tab20b' or any colormap you prefer.
-    """
-    # We'll sample 'tab20b' for 'n_labels' distinct colors:
-    base_cmap = plt.cm.get_cmap('tab20b', n_labels)
-    color_list = list(base_cmap.colors)
-
-    # If you want label 0 to be black (background), replace the first color:
-    color_list[0] = (0, 0, 0, 1)  # RGBA for black
-
-    # Build the ListedColormap
-    cmap = ListedColormap(color_list)
-
-    # Boundaries are integer bins from 0..n_labels
-    boundaries = list(range(n_labels + 1))
-    norm = BoundaryNorm(boundaries, n_labels)
-
-    return cmap, norm
-
-def create_dual_slices(atlas_data, i, j, k, x_mm, y_mm, z_mm, pad=10):
-    """
-    Create a single figure with 2 subplots, side by side:
-      - Left subplot: Axial slice (z=k)
-      - Right subplot: Sagittal slice (x=i)
-    Both slices are cropped around (i,j) or (j,k) by 'pad' voxels,
-    and each uses the same discrete colormap. A red dot indicates the cluster.
-    Returns a BytesIO buffer containing the PNG image.
-    """
-    # 1) Figure out the max label:
-    max_label = int(atlas_data.max())  # e.g. 314 or 357 for Julich or FS
-
-    # 2) Create the discrete colormap + normalization
-    my_cmap, my_norm = make_discrete_colormap(max_label + 1)
-
-    # ---------- A) Axial Slice (z = k) ----------
-    # Entire axial slice shape => [x, y]
-    axial_2d = atlas_data[:, :, k]
-    
-    # Crop around i,j
-    x_min = max(0, i - pad)
-    x_max = min(atlas_data.shape[0], i + pad)
-    y_min = max(0, j - pad)
-    y_max = min(atlas_data.shape[1], j + pad)
-    axial_cropped = axial_2d[x_min:x_max, y_min:y_max]
-
-    # Where to draw the red dot in the cropped slice
-    dot_x_ax = i - x_min
-    dot_y_ax = j - y_min
-
-    # ---------- B) Sagittal Slice (x = i) ----------
-    # Entire sagittal slice shape => [y, z]
-    sag_2d = atlas_data[i, :, :]
-    
-    # Crop around j,k
-    j_min = max(0, j - pad)
-    j_max = min(atlas_data.shape[1], j + pad)
-    k_min = max(0, k - pad)
-    k_max = min(atlas_data.shape[2], k + pad)
-    sag_cropped = sag_2d[j_min:j_max, k_min:k_max]
-
-    # Where to draw the red dot in the cropped slice
-    dot_x_sag = k - k_min   # horizontal axis is z
-    dot_y_sag = j - j_min   # vertical axis is y
-
-    # ---------- C) Plot side by side ----------
-    fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(10, 5))
-
-    # Left: Axial
-    # We do transpose so that horizontally => y, vertically => x
-    axs[0].imshow(axial_cropped.T, origin='lower', cmap=my_cmap, norm=my_norm)
-    axs[0].plot(dot_y_ax, dot_x_ax, 'ro', markersize=13)  # note the swap
-    axs[0].set_title(f"Axial (Z = {z_mm:.1f} mm)")
-    axs[0].axis('off')
-
-    # Right: Sagittal
-    # This has shape [y_range, z_range], so .T => horizontal => z, vertical => y
-    axs[1].imshow(sag_cropped.T, origin='lower', cmap=my_cmap, norm=my_norm)
-    axs[1].plot(dot_x_sag, dot_y_sag, 'ro', markersize=13)
-    axs[1].set_title(f"Sagittal (X = {x_mm:.1f} mm)")
-    axs[1].axis('off')
-
-    plt.tight_layout()
-
-    # Save figure to an in-memory buffer
-    buf = io.BytesIO()
-    plt.savefig(buf, format='png', bbox_inches='tight')
-    plt.close(fig)
-    buf.seek(0)
-    return buf
-
 def load_label_file(file_path):
     """
     Reads a label file (in the format produced by AFNI's 3dinfo -labeltable)
@@ -224,7 +132,7 @@ def get_anatomical_labels(coord, atlas, coord_system="RAI"):
     label_val = int(atlas_data[i, j, k])
     if label_val != 0:
         region_name = label_dict.get(label_val, f"Label {label_val} not found")
-        return region_name, (i, j, k), neurosynth_url
+        return region_name, (i, j, k), neurosynth_url, (x_mni, y_mni, z_mni)
     else:
         # 7) If 0, search nearby within 7 mm
         label_candidates = search_all_labels((i, j, k), atlas_data, max_radius=7)
@@ -234,7 +142,7 @@ def get_anatomical_labels(coord, atlas, coord_system="RAI"):
                 f"* Within {round(dist,1)} mm: {label_dict.get(lab, 'Label '+str(lab))}"
                 for lab, dist in sorted_candidates
             ])
-            return search_info, (i, j, k), neurosynth_url
+            return search_info, (i, j, k), neurosynth_url, (x_mni, y_mni, z_mni)
         else:
             return "Label 0 not found"
 
@@ -317,7 +225,6 @@ def run_analysis(cluster_file_path, atlas, task_description, contrast_descriptio
     """
     clusters = parse_cluster_file(cluster_file_path, max_clusters)
     anatomical_results = []
-    cluster_images = {} 
     
     # Display the first 6 clusters.
     st.subheader(f"First {max_clusters} clusters:")
@@ -334,8 +241,8 @@ def run_analysis(cluster_file_path, atlas, task_description, contrast_descriptio
 
     # Get anatomical labels for each cluster.
     for i, cluster in enumerate(clusters, start=1):
-        label_info, (vi, vj, vk), neurosynth_url = get_anatomical_labels(cluster["Peak"], atlas, coord_system)
-        st.write(f"**Cluster {i}:** Voxels: {cluster['voxels']}, Peak: {cluster['Peak']}")
+        label_info, (vi, vj, vk), neurosynth_url, lpi_coords = get_anatomical_labels(cluster["Peak"], atlas, coord_system)
+        st.write(f"**Cluster {i}:** Voxels: {cluster['voxels']}, Peak (LPI): {tuple(round(c, 2) for c in lpi_coords)}")
         st.text(label_info)
 
         with st.expander("🧠 Functional Resting-State Connectivity (via Neurosynth.org)"):
@@ -344,16 +251,6 @@ def run_analysis(cluster_file_path, atlas, task_description, contrast_descriptio
                     <iframe src="{neurosynth_url}" width="1600" height="950" style="border:none;"></iframe>
                 </div>
             """, height=550)
-        
-        x_mm, y_mm, z_mm = cluster["Peak"]
-        # 1) Create the dual-slice figure for Word doc
-        dual_buf = create_dual_slices(atlas_data, vi, vj, vk, x_mm, y_mm, z_mm, pad=100)
-
-        #with st.expander(f"Show slices for Cluster {i}"):
-            #st.image(dual_buf, caption=f"Axial & Sagittal")
-
-        # 3) Store the figure bytes for this cluster
-        cluster_images[i] = dual_buf.getvalue()
 
         st.write("-" * 20)
         anatomical_results.append(f"Cluster {i} (Voxels: {cluster['voxels']}, Peak: {cluster['Peak']}):\n{label_info}")
@@ -368,13 +265,13 @@ def run_analysis(cluster_file_path, atlas, task_description, contrast_descriptio
         else:
             interpretation, references = "AI interpretation disabled", []
         
-    return anatomical_str, interpretation, references, cluster_images
+    return anatomical_str, interpretation, references
 
 def sanitize_filename(s):
     # Replace non-word characters with underscores
     return re.sub(r'\W+', '_', s)
 
-def create_word_report(settings_summary, anatomical_str, interpretation, references, cluster_images):
+def create_word_report(settings_summary, anatomical_str, interpretation, references):
     """
     Creates a Word document containing the settings summary,
     the parsed clusters, and the ChatGPT interpretation.
@@ -394,26 +291,6 @@ def create_word_report(settings_summary, anatomical_str, interpretation, referen
     # Parsed Clusters section
     doc.add_heading('Parsed Clusters', level=1)
     doc.add_paragraph(anatomical_str, style='List Bullet')
-
-    # --- Insert images for each cluster if available ---
-    doc.add_heading('Cluster Images', level=1)
-    if cluster_images:
-        for cluster_idx, image_bytes in cluster_images.items():
-            doc.add_heading(f"Cluster {cluster_idx}", level=2)
-
-            # Save the image bytes to a temporary file
-            temp_img = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
-            temp_img.write(image_bytes)
-            temp_img_name = temp_img.name
-            temp_img.close()
-
-            # Insert into the doc
-            doc.add_picture(temp_img_name, width=Pt(200))  # or use Inches(3.0), etc.
-
-            # Remove the temporary file
-            os.remove(temp_img_name)
-    else:
-        doc.add_paragraph("No cluster images available.")
 
     # ChatGPT Interpretation section
     doc.add_heading('Perplexity Interpretation', level=1)
@@ -1184,7 +1061,7 @@ if conversion_choice == "AFNI":
     if run_button:
         if cluster_file_path is not None:
             with st.spinner("Running analysis..."):
-                anatomical_str, interpretation, references, cluster_images = run_analysis(
+                anatomical_str, interpretation, references = run_analysis(
                     cluster_file_path=cluster_file_path,
                     atlas=atlas,
                     task_description=task_description,
@@ -1195,7 +1072,6 @@ if conversion_choice == "AFNI":
             st.session_state.anatomical_str = anatomical_str
             st.session_state.interpretation = interpretation
             st.session_state.references = references 
-            st.session_state.cluster_images = cluster_images
 
             st.markdown(interpretation)
             if references:
@@ -1215,17 +1091,15 @@ if conversion_choice == "AFNI":
 
     # Only show the download button if the interpretation is available in session_state.
     if st.session_state.pro_mode and "interpretation" in st.session_state and st.session_state.interpretation:
-        report_filename = f"{sanitize_filename(task_description)}_{sanitize_filename(contrast_description)}_{sanitize_filename(atlas)}_Report.docx"
+        report_filename = f"{sanitize_filename(task_description)}_{sanitize_filename(atlas)}_Report.docx"
         # Generate the Word report.
         my_references = st.session_state.get("references", [])
-        my_cluster_images = None #st.session_state.get("cluster_images", {})
 
         report_path = create_word_report(
             settings_summary,
             st.session_state.anatomical_str,
             st.session_state.interpretation,
-            my_references,
-            my_cluster_images
+            my_references
         )
 
         with open(report_path, "rb") as f:
