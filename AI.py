@@ -15,6 +15,13 @@ from matplotlib.colors import ListedColormap, BoundaryNorm
 
 st.set_page_config(page_title="AItlas Clusters", page_icon="🧠")
 
+welcome_paragraph = """
+<h4 style="color:#0c5460;margin-bottom:5px;">🎉 Welcome back!</h4>
+<p style="color:#0c5460;margin:0;">
+    We've added <b>new Neurosynth visualizations</b> for each cluster, allowing you to explore the functional connectivity of your specific clusters at rest. We've also integrated the Brodmann atlas :')
+</p>
+"""
+
 # Instantiate the client with the Perplexity API endpoint.
 openai_api_key = os.getenv("OPENAI_API_KEY")
 if not openai_api_key:
@@ -369,6 +376,15 @@ if conversion_choice == "-- Select an option --":
                 st.sidebar.error("Incorrect Pro Mode password.")
     if st.session_state.pro_mode:
         st.sidebar.success("Pro Mode enabled!")
+
+    if "welcome_shown" not in st.session_state:
+        with st.container():
+            st.markdown("""
+                <div style="background-color:#d1ecf1;padding:10px;border-radius:5px;border-left:5px solid #0c5460;">
+                    {welcome_paragraph}
+                </div>
+                """, unsafe_allow_html=True)
+        st.session_state.welcome_shown = True
                 
     st.title("AItlas")
     st.subheader("Analyze your fMRI clusters with anatomical labeling and Deep Research AI from Perplexity")
