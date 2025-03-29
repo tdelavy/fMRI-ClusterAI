@@ -529,7 +529,7 @@ if conversion_choice == "-- Select an option --":
         </style>
         <div class="credits-discrete">
         Credits to 
-        <a href="www.linkedin.com/in/thibaud-delavy-0b13571b9" 
+        <a href="https://www.linkedin.com/in/thibaud-delavy-0b13571b9" 
             target="_blank"
             style="color: inherit; text-decoration: none;">
             <span class="highlight-name">Thibaud Delavy</span>
