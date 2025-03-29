@@ -171,14 +171,11 @@ def search_all_labels(voxel, atlas_data, max_radius=7):
 
 def get_anatomical_labels(coord, atlas, coord_system="RAI"):
     """
-    Maps a coordinate (x, y, z) to the correct voxel index using AFNI's 
-    geometry string: i = 96 - x,  j = 132 - y,  k = z + 78.
-    
-    Includes debug print statements to display intermediate values.
-    If the direct lookup returns 0, it searches within a 7 mm radius for nearby nonzero labels.
-    Then uses the label dictionary to return the region name(s) with distance information.
+    Maps a coordinate (x, y, z) in MNI space to the correct voxel index using NiBabel's affine,
+    then returns the label name plus the voxel index. If no label is found, returns an appropriate message.
     """
-    # 1) Choose which atlas to load
+
+    # 1) Determine atlas path & label dictionary
     if atlas == "Julich_MNI2009c":
         atlas_path = "Julich_MNI2009c.nii.gz"
         label_dict = label_julich
@@ -190,59 +187,53 @@ def get_anatomical_labels(coord, atlas, coord_system="RAI"):
         label_dict = label_Brodmann
     else:
         return "Unknown atlas"
-    
-    # 2) Load the atlas data (ignoring nibabel’s affine for coordinate transform)
+
+    # 2) Load the atlas
     try:
         atlas_img = nib.load(atlas_path)
     except Exception as e:
         return f"Error loading atlas: {e}"
     atlas_data = atlas_img.get_fdata()
-    shape = atlas_data.shape  # e.g. (193, 229, 193)
-    
-    #st.write("Atlas shape:", shape)
-    
-    if coord_system.upper() == "RAI":
-        conv_coord = (coord[0], coord[1], coord[2])
-    elif coord_system.upper().startswith("LPI"):
-        conv_coord = (-coord[0], -coord[1], coord[2])
+    shape = atlas_data.shape
+
+    # 3) Convert coordinate system if needed
+    if coord_system.upper().startswith("LPI"):
+        # Coordinates are already in LPI; use them directly.
+        x_mni, y_mni, z_mni = coord
+    elif coord_system.upper() == "RAI":
+        # Convert RAI to LPI by inverting x and y.
+        x_mni, y_mni, z_mni = -coord[0], -coord[1], coord[2]
     else:
-        conv_coord = coord
-    
-    #st.write("Original coordinate:", coord)
-    #st.write("Converted coordinate (assumed RAS):", conv_coord)
-    
-    x_ras, y_ras, z_ras = conv_coord
-    
-    # 4) Apply AFNI's geometry string formula: i = 96 - x, j = 132 - y, k = z + 78.
-    i = 96 - x_ras
-    j = 132 - y_ras
-    k = z_ras + 78
-    
-    # 5) Round to nearest integer for voxel indices.
-    i, j, k = int(round(i)), int(round(j)), int(round(k))
-    
-    #st.write("Computed voxel indices: i=", i, " j=", j, " k=", k)
-    
-    # 6) Check if voxel is in bounds.
-    if i < 0 or i >= shape[0] or j < 0 or j >= shape[1] or k < 0 or k >= shape[2]:
+        # If unknown, assume coordinates are already in MNI.
+        x_mni, y_mni, z_mni = coord
+        
+    neurosynth_url = f"https://neurosynth.org/locations/?x={int(round(x_mni))}&y={int(round(y_mni))}&z={int(round(z_mni))}"
+
+    # 4) Use the atlas's affine to get voxel indices
+    affine = atlas_img.affine
+    inv_affine = np.linalg.inv(affine)
+    voxel_coord = inv_affine.dot([x_mni, y_mni, z_mni, 1])[:3]
+    i, j, k = np.round(voxel_coord).astype(int)
+
+    # 5) Check bounds
+    if not (0 <= i < shape[0] and 0 <= j < shape[1] and 0 <= k < shape[2]):
         return "Coordinate outside atlas volume"
-    
-    # 7) Direct lookup.
+
+    # 6) Direct label lookup
     label_val = int(atlas_data[i, j, k])
-    #st.write("Direct lookup atlas label value at voxel:", label_val)
-    
     if label_val != 0:
         region_name = label_dict.get(label_val, f"Label {label_val} not found")
-        return region_name, (i, j, k)
+        return region_name, (i, j, k), neurosynth_url
     else:
-        # 8) If direct lookup returns 0, search within a 7 mm radius for nearby nonzero labels.
-        #st.write("Direct lookup returned 0. Searching for nearby labels within 7 mm...")
+        # 7) If 0, search nearby within 7 mm
         label_candidates = search_all_labels((i, j, k), atlas_data, max_radius=7)
         if label_candidates:
-            # Sort candidate labels by distance.
             sorted_candidates = sorted(label_candidates.items(), key=lambda x: x[1])
-            search_info = "\n".join([f"* Within {round(dist,1)} mm: {label_dict.get(lab, 'Label '+str(lab))}" for lab, dist in sorted_candidates])
-            return search_info, (i, j, k)
+            search_info = "\n".join([
+                f"* Within {round(dist,1)} mm: {label_dict.get(lab, 'Label '+str(lab))}"
+                for lab, dist in sorted_candidates
+            ])
+            return search_info, (i, j, k), neurosynth_url
         else:
             return "Label 0 not found"
 
@@ -334,7 +325,7 @@ def run_analysis(cluster_file_path, atlas, task_description, contrast_descriptio
         atlas_path = "Julich_MNI2009c.nii.gz"
     elif atlas == "FS.afni.MNI2009c_asym":
         atlas_path = "FS.afni.MNI2009c_asym.nii.gz"
-    elif atlas == "Broadmann_pijn":
+    elif atlas == "Broadmann_MNI2009":
         atlas_path = "Brodmann_pijn_afni.nii.gz"
 
     atlas_img = nib.load(atlas_path)  # the same atlas you used in get_anatomical_labels
@@ -345,6 +336,9 @@ def run_analysis(cluster_file_path, atlas, task_description, contrast_descriptio
         label_info, (vi, vj, vk) = get_anatomical_labels(cluster["Peak"], atlas, coord_system)
         st.write(f"**Cluster {i}:** Voxels: {cluster['voxels']}, Peak: {cluster['Peak']}")
         st.text(label_info)
+
+        st.markdown(f"[Functional Resting State Connectivity]({neurosynth_url})", unsafe_allow_html=True)
+        
         x_mm, y_mm, z_mm = cluster["Peak"]
         # 1) Create the dual-slice figure for Word doc
         dual_buf = create_dual_slices(atlas_data, vi, vj, vk, x_mm, y_mm, z_mm, pad=50)
@@ -363,9 +357,8 @@ def run_analysis(cluster_file_path, atlas, task_description, contrast_descriptio
     # ---- Show a spinner while the model is generating the interpretation ----
     with st.spinner("Perplexity is thoroughly researching the internet to find the implications of these identified brain regions for the task and contrast. Please check back in a few minutes! :)"):
         if use_ai:
+            st.subheader(f"Deep Research Interpretation for the {max_clusters} clusters:")
             interpretation, references = synthesize_interpretation(anatomical_str, task_description, contrast_description, max_clusters)
-        else:
-            interpretation, references = "AI interpretation disabled", []
         
     return anatomical_str, interpretation, references, cluster_images
 
@@ -619,14 +612,14 @@ else:
     if st.session_state.pro_mode:
         atlas = st.sidebar.selectbox(
             label="Choose your atlas",
-            options=["Julich_MNI2009c", "FS.afni.MNI2009c_asym", "Broadmann_pijn"],
+            options=["Julich_MNI2009c", "FS.afni.MNI2009c_asym", "Broadmann_MNI2009"],
             index=1,  # default "Julich_MNI2009c"
             help="Select which atlas to use for anatomical labeling"
         )
     else:
         atlas = st.sidebar.selectbox(
             label="Choose your atlas",
-            options=["Julich_MNI2009c", "FS.afni.MNI2009c_asym", "Broadmann_pijn"],
+            options=["Julich_MNI2009c", "FS.afni.MNI2009c_asym", "Broadmann_MNI2009"],
             index=1,
             disabled=True,
             help="Additional atlas options are available in Pro mode: FS.afni.MNI2009c_asym & Broadmann_pijn"
@@ -1092,7 +1085,7 @@ if conversion_choice == "AFNI":
     ----------- End regions for FS.afni.MNI2009c_asym atlas --------------
     """)
     
-    elif atlas == "Broadmann_pijn":
+    elif atlas == "Broadmann_MNI2009":
         st.image("Brodmann_pijn_Atlas.png", caption="Broadmann_pijn Atlas")
         with st.expander("View Broadmann_pijn Region List"):
             st.text("""\
@@ -1196,7 +1189,6 @@ if conversion_choice == "AFNI":
             st.session_state.references = references 
             st.session_state.cluster_images = cluster_images
 
-            st.subheader(f"Deep Research Interpretation for the {max_clusters} clusters:")
             st.markdown(interpretation)
             if references:
                 st.subheader("References")
