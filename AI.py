@@ -349,21 +349,21 @@ st.sidebar.markdown(header_html, unsafe_allow_html=True)
 
 # Define the options
 if st.session_state.pro_mode:
-    options = ["-- Select an option --", "AFNI", "SPM"]
+    options = ["-- Select an option --", "1D File Creator", "Analysis"]
 else:
-    options = ["-- Select an option --", "AFNI", "SPM (Pro Mode required)"]
+    options = ["-- Select an option --", "1D File Creator (Pro Mode required)", "Analysis"]
 
 # Create the selectbox
 conversion_choice = st.sidebar.selectbox(
-    label="Software used for clusterising",
+    label="Analysis",
     options=options,
     index=0,
-    help="Select 'AFNI' if you already have a .1D cluster file; select 'SPM' if you have an SPM .m file that needs conversion."
+    help="Select 'Analysis' if you already have a .1D cluster file; select '1D File Creator' if you need a .1D file."
 )
 
-# If non-Pro and SPM is selected, reset and show warning.
-if not st.session_state.pro_mode and conversion_choice.startswith("SPM"):
-    st.sidebar.warning("SPM is locked. Enable Pro Mode to use this option.")
+# If non-Pro and Other is selected, reset and show warning.
+if not st.session_state.pro_mode and conversion_choice.startswith("1D File Creator"):
+    st.sidebar.warning("1D File Creator is locked. Enable Pro Mode to use this option.")
     # Reset the selection to default:
     conversion_choice = "-- Select an option --"
 
@@ -392,9 +392,9 @@ if conversion_choice == "-- Select an option --":
     st.title("AItlas")
     st.subheader("Analyze your fMRI clusters with anatomical labeling and Deep Research AI from Perplexity")
     st.markdown(""" 
-    #### AItlas: fMRI Cluster Analysis for AFNI & SPM
+    #### AItlas: fMRI Cluster Analysis
 
-    AItlas is designed to analyze fMRI clusters from **AFNI** and **SPM**. It reads a `.1D` file containing the voxel numbers along with the X, Y, and Z coordinates of the peak of each cluster and suggests two atlases based on precision levels for identifying brain regions.
+    AItlas is designed to analyze fMRI clusters. It reads a `.1D` file containing the voxel numbers along with the X, Y, and Z coordinates of the peak of each cluster and suggests two atlases based on precision levels for identifying brain regions.
 
     The extracted anatomical information is then analyzed by Perplexity’s Sonar Deep Research, which returns relevant literature on the number of clusters selected for the specified task and condition.
     """)
@@ -415,7 +415,7 @@ if conversion_choice == "-- Select an option --":
 
     For optimal performance, this application assumes that your fMRI data has been normalized using the **MNI152 2009 template**. The voxel-to-anatomical label mapping is calibrated specifically for this template. If a different template was used during preprocessing, the anatomical labeling may not be accurate. Please ensure that your analysis employed the MNI152 2009 template to benefit from this app.
     """, unsafe_allow_html=True)
-    st.warning("Please select either AFNI or SPM to continue.")
+    st.warning("Please select either 1D File Creator or Analysis to continue.")
     st.markdown(
         """
         <style>
@@ -444,51 +444,88 @@ if conversion_choice == "-- Select an option --":
 
 cluster_file_path = None  # This will store the path to the .1D file for analysis
 
-if conversion_choice == "SPM":
-    task_description = st.sidebar.text_input(
-        "Task Description",
-        "Stroop task",
-        disabled=False,
-        help="Locked when SPM is selected."
+if conversion_choice == "1D File Creator":
+    st.title("AItlas - Custom Cluster Creation")
+    st.subheader("Enter your custom peak activation coordinates")
+
+    input_coord_system = st.selectbox(
+         "Input Coordinate System",
+         options=["LPI", "RAI"],
+         index=0,
+         help="Select the coordinate system for your input coordinates. Coordinates will be converted to LPI for analysis."
     )
-    contrast_description = st.sidebar.text_input(
-        "Contrast Description",
-        "",
-        disabled=False,
-        help="Enter your contrast (e.g., Incongruent minus Congruent)"
+
+    # Provide a data editor table with columns: Voxels, Peak x, Peak y, Peak z.
+    # Here we create 12 empty rows as default so the user sees a fixed-size table.
+    default_data = pd.DataFrame({
+        "Voxels": [None] * 12,
+        "Peak x": [None] * 12,
+        "Peak y": [None] * 12,
+        "Peak z": [None] * 12
+    })
+    st.markdown("**Please enter your custom peak activation coordinates below.**\n\n*Note: The default table contains 12 rows. Fill in only the rows you need. Rows with missing values will be skipped.*")
+    custom_clusters = st.data_editor(
+        default_data,
+        num_rows="dynamic",
+        use_container_width=True,
+        key="custom_clusters"
     )
-    # Uploader for SPM .m file only
-    uploaded_m_file = st.sidebar.file_uploader(
-        "Choose your SPM .m file (MNI152_2009_template as the reference) for conversion",
-        type=["m"]
+
+    # Function to convert coordinates to LPI if needed.
+    def convert_to_lpi(row):
+        # If input is in RAI, convert to LPI by negating x and y.
+        if input_coord_system == "RAI":
+            return pd.Series({
+                "Voxels": row["Voxels"],
+                "Peak x": -row["Peak x"] if pd.notnull(row["Peak x"]) else None,
+                "Peak y": -row["Peak y"] if pd.notnull(row["Peak y"]) else None,
+                "Peak z": row["Peak z"]
+            })
+        else:
+            return row  # Already in LPI
+
+    # Convert columns to numeric (turns empty or invalid entries into NaN).
+    for col in ["Voxels", "Peak x", "Peak y", "Peak z"]:
+        custom_clusters[col] = pd.to_numeric(custom_clusters[col], errors="coerce")
+
+    # Apply coordinate system conversion.
+    custom_clusters_lpi = custom_clusters.apply(convert_to_lpi, axis=1)
+
+    # Create the .1D file content.
+    header = (
+        "#Coordinate order = LPI\n"
+        "#Voxels   Peak x Peak y Peak z\n"
+        "#------ ------ ------ ------\n"
     )
-    if uploaded_m_file is not None:
-        # Write the uploaded .m file to a temporary file
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".m") as tmp_m:
-            tmp_m.write(uploaded_m_file.read())
-            tmp_m_name = tmp_m.name
-        # Construct a meaningful output filename using the task and contrast (assumed already defined)
-        output_filename = f"SPM_Clusters_{sanitize_filename(task_description)}_{sanitize_filename(contrast_description)}.1D"
-        # Use a temporary file for the conversion output
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".1D") as tmp_out:
-            output_filepath = tmp_out.name
-        # Call the external conversion script (extract_spm_peaks.py)
-        result = subprocess.run(
-            ["python", "extract_spm_peaks.py", tmp_m_name, output_filepath],
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
-        )
+    rows = []
+    for _, row in custom_clusters_lpi.iterrows():
+        try:
+            # Attempt to convert the values. If any conversion fails, skip the row.
+            vox = int(row['Voxels'])
+            px = float(row['Peak x'])
+            py = float(row['Peak y'])
+            pz = float(row['Peak z'])
+            row_str = f"{vox:7d} {px:+7.1f} {py:+7.1f} {pz:+7.1f}"
+            rows.append(row_str)
+        except (TypeError, ValueError):
+            # If conversion fails (e.g., value is None), skip this row.
+            continue
 
-        # Read the content of the converted file
-        with open(output_filepath, "r") as f:
-            file_content = f.read()
+    file_content = header + "\n" + "\n".join(rows)
 
-        st.session_state.converted_file_content = file_content
+    st.download_button(
+        label="Download Custom .1D File",
+        data=file_content,
+        file_name="Custom_Clusters.1D",
+        mime="text/plain"
+    )
 
-        # Clean up temporary files
-        os.remove(tmp_m_name)
-        os.remove(output_filepath)
+    st.warning(
+        "The coordinates you will enter will be automatically converted to LPI format. "
+        "Please ensure that 'LPI' is selected as the Coordinate System in the analysis for accurate processing."
+    )
 
-else:
+elif conversion_choice == "Analysis":
     task_description = st.sidebar.text_input(
         "Theme / Domain",
         "Cognitive fatigue",
@@ -511,7 +548,7 @@ else:
         label="Coordinate System",
         options=["RAI", "LPI (=SPM)"],
         index=0,
-        help="RAI format is used by AFNI by default, while LPI is used by SPM."
+        help="RAI format is used by AFNI by default, while LPI is used by SPM. Choose LPI if used the 1D File Creator."
     )
     if st.session_state.pro_mode:
         atlas = st.sidebar.selectbox(
@@ -1211,47 +1248,7 @@ if conversion_choice == "AFNI":
         os.remove(report_path)
     elif "interpretation" in st.session_state and st.session_state.interpretation:
         st.warning("3d Visualization, Sonar Deep Research and Downloading the Word report are options only available only in Pro Mode. Please enable Pro Mode to access these features.")
-else:
-    # When SPM is selected, only the conversion is performed
-    if "converted_file_content" in st.session_state:
-        st.title("AItlas")
-        st.subheader("SPM Cluster Conversion")
-        st.markdown("### Main Clusters Detected and Converted into a .1D File:")
-        st.code(st.session_state.converted_file_content, language="text")
 
-        # Provide a download button for the converted .1D file directly in the browser
-        st.download_button(
-            label="Download Converted .1D File",
-            data=file_content,
-            file_name=output_filename,
-            mime="text/plain"
-        )
-    else:
-        st.title("AItlas")
-        st.subheader("SPM Cluster Conversion")
-        st.warning("Please upload a SPM .m file to convert to .1D file in order to be analyzed.")
-        with st.expander("#### How to Use AItlas with SPM"):
-            st.text("""\
-        To use this app correctly with SPM, follow these steps:
-        
-        1. Generate a .m file from SPM:
-        - Open SPM in MATLAB.
-        - Navigate to your results window.
-        - Click on File → **Generate Code**.
-        - Save the generated .m file on your computer.
-        """)
-            st.image("MatClusterExtraction.png", caption="Matlab Cluster Extraction")
-            st.markdown("""
-            2. Upload your .m file:
-            - Click the Upload button below.
-            - Select the .m file you saved.
-            - The app will automatically extract cluster information and convert the file into .1D format.
-            
-            3. Download your .1D file and proceed with the analysis:
-            - Once converted, the app will display the detected clusters.
-            - You can then download the .1D file for further analysis in AFNI.
-            - Select now the AFNI option and proceed with the analysis with your downloaded .1D file.
-            """)
 
 
 
