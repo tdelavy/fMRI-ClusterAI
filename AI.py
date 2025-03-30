@@ -15,6 +15,7 @@ from matplotlib.colors import ListedColormap, BoundaryNorm
 from skimage.measure import marching_cubes
 import plotly.graph_objects as go
 import json, urllib.parse
+import pandas as pd
 
 st.set_page_config(page_title="AItlas Clusters", page_icon="🧠")
 
