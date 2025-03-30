@@ -465,6 +465,15 @@ if conversion_choice == "1D File Creator":
     st.title("AItlas - Custom Cluster Creation")
     st.subheader("Enter your custom peak activation coordinates")
 
+    st.markdown(
+        """
+        For the analysis, the system requires a .1D file containing the cluster information.
+        This page allows you to create one by entering the number of voxels and the peak activation 
+        coordinates (X, Y, Z) for each cluster in the table below. Once you have filled in the required 
+        information, click the download button to obtain your .1D file and proceed with the analysis.
+        """
+    )
+
     input_coord_system = st.selectbox(
          "Input Coordinate System",
          options=["LPI", "RAI"],
