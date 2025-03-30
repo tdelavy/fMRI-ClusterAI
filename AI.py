@@ -225,7 +225,7 @@ def synthesize_interpretation(anatomical_info, task_description, contrast_descri
     # Then extract the text
     return interpretation, references
 
-def run_analysis(cluster_file_path, atlas, task_description, contrast_description, use_ai):
+def run_analysis(cluster_file_path, atlas, task_description, contrast_description):
     """
     Runs the full analysis:
       - Parses the cluster file (keeping only the first 6 clusters).
@@ -283,16 +283,8 @@ def run_analysis(cluster_file_path, atlas, task_description, contrast_descriptio
         anatomical_results.append(f"Cluster {i} (Voxels: {cluster['voxels']}, Peak: {cluster['Peak']}):\n{label_info}")
         
     anatomical_str = "\n\n".join(anatomical_results)
-
-    # ---- Show a spinner while the model is generating the interpretation ----
-    with st.spinner("Perplexity is thoroughly researching the internet to find the implications of these identified brain regions for the task and contrast. Please check back in a few minutes! :)"):
-        if use_ai:
-            st.subheader(f"Deep Research Interpretation for the {max_clusters} clusters:")
-            interpretation, references = synthesize_interpretation(anatomical_str, task_description, contrast_description, max_clusters)
-        else:
-            interpretation, references = "AI interpretation disabled", []
         
-    return anatomical_str, interpretation, references, clusters
+    return anatomical_str, clusters
 
 def sanitize_filename(s):
     # Replace non-word characters with underscores
@@ -308,29 +300,77 @@ def create_word_report(settings_summary, anatomical_str, interpretation, referen
 
     # Title
     title = doc.add_heading('fMRI Cluster Analysis Report', 0)
-    title.alignment = 1  # center
+    title.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
-    # Analysis settings section
+    # Analysis Settings Section
     doc.add_heading('Analysis Settings', level=1)
-    para = doc.add_paragraph(settings_summary)
-    para.style.font.size = Pt(11)
+    p = doc.add_paragraph(settings_summary)
+    p.style.font.size = Pt(11)
 
-    # Parsed Clusters section
-    doc.add_heading('Parsed Clusters', level=1)
-    doc.add_paragraph(anatomical_str, style='List Bullet')
+    # Cluster Summary Section (as a table)
+    doc.add_heading('Cluster Summary', level=1)
+    # Create a table with headers: Cluster, Voxels, Peak (LPI), Anatomical Label
+    table = doc.add_table(rows=1, cols=4)
+    hdr_cells = table.rows[0].cells
+    hdr_cells[0].text = 'Cluster'
+    hdr_cells[1].text = 'Voxels'
+    hdr_cells[2].text = 'Peak (LPI)'
+    hdr_cells[3].text = 'Anatomical Label'
+    # Assume anatomical_str has each cluster on a new line in the format:
+    # "Cluster i (Voxels: xxx, Peak: (x, y, z)):\nLabel info"
+    for line in anatomical_str.split('\n\n'):
+        # Basic parsing; you might want to improve this based on your output format
+        if not line.strip():
+            continue
+        parts = line.split("):")
+        if len(parts) < 2:
+            continue
+        header_line = parts[0] + ")"
+        label_text = parts[1].strip()
+        # Extract cluster number, voxels, and peak coordinates from header_line
+        # Example header_line: "Cluster 1 (Voxels: 654, Peak: (24.5, 80.5, 29.5))"
+        try:
+            cluster_number = header_line.split(" ")[1]
+            voxels = header_line.split("Voxels:")[1].split(",")[0].strip()
+            peak = header_line.split("Peak:")[1].strip().strip("()")
+        except Exception:
+            cluster_number, voxels, peak = "", "", ""
+        row_cells = table.add_row().cells
+        row_cells[0].text = cluster_number
+        row_cells[1].text = voxels
+        row_cells[2].text = peak
+        row_cells[3].text = label_text
 
-    # ChatGPT Interpretation section
-    doc.add_heading('Perplexity Interpretation', level=1)
-    doc.add_paragraph(interpretation, style='Normal')
+    # Interpretation Section
+    doc.add_heading('Interpretation', level=1)
+    # Process the interpretation text to handle markdown-style formatting.
+    for para in interpretation.split("\n"):
+        para = para.strip()
+        if not para:
+            continue
 
-    # References section
+        # Headings
+        if para.startswith("### "):
+            doc.add_heading(para[4:].strip(), level=2)
+        elif para.startswith("#### "):
+            doc.add_heading(para[5:].strip(), level=3)
+        else:
+            # Bold text within the paragraph
+            p = doc.add_paragraph()
+            bold_parts = re.split(r'(\*\*.*?\*\*)', para)
+            for part in bold_parts:
+                run = p.add_run(part.replace("**", "")) if part.startswith("**") else p.add_run(part)
+                run.bold = part.startswith("**")
+
+    # References Section
+    doc.add_heading('References', level=1)
     if references:
-        doc.add_heading('References', level=1)
         for i, ref in enumerate(references, start=1):
-            doc.add_paragraph(f"[{i}] {ref}", style='List Number')
+            p = doc.add_paragraph(style='List Number')
+            p.add_run(f"{i}. ").bold = True
+            p.add_run(ref)
     else:
-        doc.add_heading('References', level=1)
-        doc.add_paragraph("No references returned.")
+        doc.add_paragraph("No references returned.", style='Normal')
 
     # Save to a temporary file
     temp_doc = tempfile.NamedTemporaryFile(delete=False, suffix=".docx")
@@ -1143,17 +1183,14 @@ if conversion_choice == "Analysis":
     if run_button:
         if cluster_file_path is not None:
             with st.spinner("Running analysis..."):
-                anatomical_str, interpretation, references, clusters = run_analysis(
+                anatomical_str, clusters = run_analysis(
                     cluster_file_path=cluster_file_path,
                     atlas=atlas,
                     task_description=task_description,
-                    contrast_description=contrast_description,
-                    use_ai=use_ai
+                    contrast_description=contrast_description
                 )
             # Store the results in session_state so they can be accessed later
             st.session_state.anatomical_str = anatomical_str
-            st.session_state.interpretation = interpretation
-            st.session_state.references = references 
 
             if st.session_state.pro_mode:
                 # 1) Load your MNI template (MNI152_2009_template.nii.gz).
@@ -1233,6 +1270,16 @@ if conversion_choice == "Analysis":
 
                 st.plotly_chart(fig, use_container_width=True)
 
+            with st.spinner("Perplexity is thoroughly researching the internet to find the implications of these identified brain regions..."):
+                if use_ai:
+                    interpretation, references = synthesize_interpretation(anatomical_str, task_description, contrast_description, max_clusters)
+                else:
+                    interpretation, references = "AI interpretation disabled", []
+            st.session_state.interpretation = interpretation
+            st.session_state.references = references
+            
+            if use_ai:
+                st.subheader(f"Deep Research Interpretation for the {max_clusters} clusters:")
             st.markdown(interpretation)
             if references:
                 st.subheader("References")
