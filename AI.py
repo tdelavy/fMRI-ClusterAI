@@ -7,6 +7,7 @@ from openai import OpenAI
 import re
 import docx
 from docx.shared import Pt
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 import nibabel as nib
 import numpy as np
 import matplotlib.pyplot as plt
