@@ -596,8 +596,8 @@ elif conversion_choice == "Analysis":
             help="This feature is available only in Pro Mode."
         )
 
-# --- Run Analysis button (only for AFNI option) ---
-if conversion_choice == "AFNI":
+# --- Run Analysis button (only for Analysis option) ---
+if conversion_choice == "Analysis":
     st.title("AItlas")
     st.subheader("Analyze your fMRI clusters with anatomical labeling and Deep Research AI from Perplexity")
     st.markdown(""" 
