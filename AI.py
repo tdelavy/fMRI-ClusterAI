@@ -252,7 +252,23 @@ def run_analysis(cluster_file_path, atlas, task_description, contrast_descriptio
 
     # Get anatomical labels for each cluster.
     for i, cluster in enumerate(clusters, start=1):
-        label_info, (vi, vj, vk), neurosynth_url, lpi_coords = get_anatomical_labels(cluster["Peak"], atlas, coord_system)
+        try:
+            label_info, (vi, vj, vk), neurosynth_url, lpi_coords = get_anatomical_labels(cluster["Peak"], atlas, coord_system)
+        except ValueError:
+            st.warning(
+                f"Cluster {i}: The analysis did not return any relevant brain location. We suspect the coordinate system your indicated is incorrect. "
+                "Please verify whether your coordinates are in RAI or LPI. If you used the 1D File Creator, ensure you are using the LPI system."
+            )
+            continue
+
+        # Check for common errors indicating a coordinate system issue.
+        if isinstance(label_info, str) and ("Coordinate outside atlas volume" in label_info or "Label 0 not found" in label_info):
+            st.warning(
+                f"Cluster {i}: The analysis did not return any relevant brain location. We suspect the coordinate system your indicated is incorrect. "
+                "Please verify whether your coordinates are in RAI or LPI. If you used the 1D File Creator, ensure you are using the LPI system."
+            )
+            continue
+            
         st.write(f"**Cluster {i}:** Voxels: {cluster['voxels']}, Peak (LPI): {tuple(round(c, 2) for c in lpi_coords)}")
         st.text(label_info)
 
@@ -517,7 +533,7 @@ if conversion_choice == "1D File Creator":
     st.download_button(
         label="Download Custom .1D File",
         data=file_content,
-        file_name="Custom_Clusters.1D",
+        file_name="Custom_Clusters_LPI.1D",
         mime="text/plain"
     )
 
