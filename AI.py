@@ -18,7 +18,7 @@ st.set_page_config(page_title="AItlas Clusters", page_icon="🧠")
 welcome_paragraph = """
 <h4 style="color:#0c5460;margin-bottom:5px;">🎉 Welcome back!</h4>
 <p style="color:#0c5460;margin:0;">
-    We've added <b>new Neurosynth visualizations</b> for each cluster, allowing you to explore the functional connectivity of your specific clusters at rest. Brodmann atlas is now integrated!
+    We've added <b>new Neurosynth visualizations</b> for each cluster, allowing you to explore the functional connectivity of your specific clusters at rest. Brodmann atlas and a 3D visualization tool are also integrated in Pro Mode!
 </p>
 """
 
@@ -272,7 +272,7 @@ def run_analysis(cluster_file_path, atlas, task_description, contrast_descriptio
         else:
             interpretation, references = "AI interpretation disabled", []
         
-    return anatomical_str, interpretation, references
+    return anatomical_str, interpretation, references, clusters
 
 def sanitize_filename(s):
     # Replace non-word characters with underscores
@@ -1077,7 +1077,7 @@ if conversion_choice == "AFNI":
     if run_button:
         if cluster_file_path is not None:
             with st.spinner("Running analysis..."):
-                anatomical_str, interpretation, references = run_analysis(
+                anatomical_str, interpretation, references, clusters = run_analysis(
                     cluster_file_path=cluster_file_path,
                     atlas=atlas,
                     task_description=task_description,
@@ -1088,6 +1088,84 @@ if conversion_choice == "AFNI":
             st.session_state.anatomical_str = anatomical_str
             st.session_state.interpretation = interpretation
             st.session_state.references = references 
+
+            if st.session_state.pro_mode:
+                # 1) Load your MNI template (MNI152_2009_template.nii.gz).
+                template_img = nib.load("MNI152_2009_template.nii.gz")
+                template_data = template_img.get_fdata()
+
+                # 2) Get the affine. This maps voxel coordinates to MNI space.
+                template_affine = template_img.affine
+
+                            
+                # 3) Compute the isosurface in voxel space.
+                level = np.percentile(template_data, 90)
+                verts, faces, normals, values = marching_cubes(template_data, level=level)
+                # Sanitize vertices to remove any NaNs or infinite values
+                verts = np.nan_to_num(verts)
+
+                # 4) Transform isosurface vertices to MNI space using the affine.
+                ones_col = np.ones((verts.shape[0], 1))
+                verts_hom = np.hstack([verts, ones_col])               # shape -> (N, 4)
+                verts_mni = template_affine @ verts_hom.T              # shape -> (4, N)
+                verts_mni = verts_mni[:3].T                            # discard the 4th row -> (N, 3)
+
+                # 5) Create the 3D mesh in Plotly, now in MNI space (verts_mni).
+                brain_mesh = go.Mesh3d(
+                    x=verts_mni[:, 0],
+                    y=verts_mni[:, 1],
+                    z=verts_mni[:, 2],
+                    i=faces[:, 0],
+                    j=faces[:, 1],
+                    k=faces[:, 2],
+                    opacity=0.3,
+                    color='lightgrey',
+                    name="Brain Surface"
+                )
+
+                # 6) Ensure cluster_coords is defined before use.
+                cluster_coords = []
+                for cluster in clusters:
+                    # Retrieve the anatomical labels (and coordinates) for the cluster peak.
+                    # Note: This call converts the cluster["Peak"] to MNI (LPI) coordinates.
+                    _, _, _, mni_coords = get_anatomical_labels(cluster["Peak"], atlas, coord_system)
+                    cluster_coords.append(mni_coords)
+
+                # 7) Separate the coordinates for plotting.
+                if cluster_coords:
+                    cluster_x, cluster_y, cluster_z = zip(*cluster_coords)
+                else:
+                    cluster_x, cluster_y, cluster_z = [], [], []
+
+                # 8) Create a Scatter3d for the clusters.
+                cluster_scatter = go.Scatter3d(
+                    x=cluster_x,
+                    y=cluster_y,
+                    z=cluster_z,
+                    mode='markers',
+                    marker=dict(
+                        size=5,
+                        color='red'
+                    ),
+                    name="Clusters"
+                )
+
+                fig = go.Figure(data=[brain_mesh, cluster_scatter])
+                fig.update_layout(
+                    title="3D Brain Visualization of your clusters (Aligned in MNI Space in LPI coordinates)",
+                    scene=dict(
+                        xaxis_title="X",
+                        yaxis_title="Y",
+                        zaxis_title="Z",
+                        aspectmode="data",
+                        camera=dict(
+                            eye=dict(x=1.5, y=0.2, z=0.5),  # smaller values bring the camera closer
+                            up=dict(x=0, y=0, z=1)
+                        )
+                    )
+                )
+
+                st.plotly_chart(fig, use_container_width=True)
 
             st.markdown(interpretation)
             if references:
@@ -1129,7 +1207,7 @@ if conversion_choice == "AFNI":
         # Optionally, remove the temporary file after download.
         os.remove(report_path)
     elif "interpretation" in st.session_state and st.session_state.interpretation:
-        st.warning("Downloading the Word report is available only in Pro Mode. Please enable Pro Mode to access this feature.")
+        st.warning("3d Visualization, Sonar Deep Research and Downloading the Word report are options only available only in Pro Mode. Please enable Pro Mode to access these features.")
 else:
     # When SPM is selected, only the conversion is performed
     if "converted_file_content" in st.session_state:
