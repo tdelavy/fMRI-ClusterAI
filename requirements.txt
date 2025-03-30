@@ -4,3 +4,4 @@ python-docx
 nibabel
 numpy
 matplotlib
+scikit-image
