@@ -36,7 +36,7 @@ else:
 
 def load_label_file(file_path):
     """
-    Reads a label file (in the format produced by AFNI's 3dinfo -labeltable)
+    Reads a label file
     and returns a dictionary mapping integer labels to region names.
     
     Expected file format (each line):
